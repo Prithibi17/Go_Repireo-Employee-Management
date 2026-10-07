@@ -21,21 +21,21 @@ export async function generateOfficialCertificatePdf(
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontNormal = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  // 1. Cover original "Name" text
+  // 1. Cover original "Name" text and underline in template
   page.drawRectangle({
-    x: 320,
+    x: 250,
     y: 360,
-    width: 512,
-    height: 80,
+    width: 652,
+    height: 90,
     color: rgb(1, 1, 1),
   });
 
-  // 2. Draw dynamic recipient name
-  const name = certificate.recipient_name_snapshot;
-  const nameFontSize = 36;
+  // 2. Draw dynamic recipient name (Uppercase, Centered, exact tone #0f274a)
+  const name = (certificate.recipient_name_snapshot || '').toUpperCase();
+  const nameFontSize = 38;
   const nameWidth = fontBold.widthOfTextAtSize(name, nameFontSize);
   const nameX = (width - nameWidth) / 2;
-  const nameY = 390;
+  const nameY = 398;
 
   page.drawText(name, {
     x: nameX,
@@ -45,128 +45,153 @@ export async function generateOfficialCertificatePdf(
     color: rgb(0.06, 0.15, 0.29), // #0f274a
   });
 
-  // Draw separator line below name
-  const lineLength = Math.max(nameWidth + 60, 360);
+  // Draw separator line below name matching the template's line
+  const lineLength = Math.max(nameWidth + 80, 412);
   page.drawLine({
-    start: { x: (width - lineLength) / 2, y: nameY - 14 },
-    end: { x: (width + lineLength) / 2, y: nameY - 14 },
+    start: { x: (width - lineLength) / 2, y: 370 },
+    end: { x: (width + lineLength) / 2, y: 370 },
     thickness: 1.5,
-    color: rgb(0.1, 0.15, 0.25),
+    color: rgb(0.1, 0.17, 0.29),
   });
 
-  // 3. Cover original role & date text line
+  // 3. Cover original role & date text lines in template (from pdf_y 295 to 352)
   page.drawRectangle({
     x: 200,
-    y: 285,
+    y: 295,
     width: 752,
-    height: 52,
+    height: 57,
     color: rgb(1, 1, 1),
   });
 
-  // 4. Draw dynamic role & dates text
+  // 4. Draw dynamic role & dates text lines exactly matching original typography and baselines
   const formattedStart = formatDate(certificate.start_date_snapshot);
   const formattedEnd = formatDate(certificate.end_date_snapshot);
   const roleText = certificate.role_snapshot;
 
+  const fontSize = 15;
+  const textColor = rgb(0.17, 0.24, 0.31); // #2c3e50
+  const boldColor = rgb(0.04, 0.11, 0.2);  // #0b1b33
+
   // Line 1: has successfully completed an internship as a [Role] at
   const line1Prefix = 'has successfully completed an internship as a ';
   const line1Suffix = ' at';
-  const fullLine1 = `${line1Prefix}${roleText}${line1Suffix}`;
-  const line1FontSize = 14;
-  const line1Width = fontNormal.widthOfTextAtSize(fullLine1, line1FontSize);
-  const line1X = (width - line1Width) / 2;
+  const prefixW = fontNormal.widthOfTextAtSize(line1Prefix, fontSize);
+  const roleW = fontBold.widthOfTextAtSize(roleText, fontSize);
+  const suffixW = fontNormal.widthOfTextAtSize(line1Suffix, fontSize);
+  const totalL1 = prefixW + roleW + suffixW;
+  const line1X = (width - totalL1) / 2;
 
   page.drawText(line1Prefix, {
     x: line1X,
-    y: 312,
-    size: line1FontSize,
+    y: 334,
+    size: fontSize,
     font: fontNormal,
-    color: rgb(0.2, 0.25, 0.3),
+    color: textColor,
   });
 
-  const prefixW = fontNormal.widthOfTextAtSize(line1Prefix, line1FontSize);
   page.drawText(roleText, {
     x: line1X + prefixW,
-    y: 312,
-    size: line1FontSize,
+    y: 334,
+    size: fontSize,
     font: fontBold,
-    color: rgb(0.05, 0.1, 0.2),
+    color: boldColor,
   });
 
-  const roleW = fontBold.widthOfTextAtSize(roleText, line1FontSize);
   page.drawText(line1Suffix, {
     x: line1X + prefixW + roleW,
-    y: 312,
-    size: line1FontSize,
+    y: 334,
+    size: fontSize,
     font: fontNormal,
-    color: rgb(0.2, 0.25, 0.3),
+    color: textColor,
   });
 
   // Line 2: Go_Repireo from [Start Date] to [End Date].
-  const line2Part1 = 'Go_Repireo from ';
-  const line2Part2 = ' to ';
-  const fullLine2 = `${line2Part1}${formattedStart}${line2Part2}${formattedEnd}.`;
-  const line2Width = fontNormal.widthOfTextAtSize(fullLine2, line1FontSize);
-  const line2X = (width - line2Width) / 2;
+  const line2Part1 = 'Go_Repireo';
+  const line2Part2 = ' from ';
+  const line2Part3 = ' to ';
+  const line2Part4 = `${formattedEnd}.`;
 
+  const p1W = fontBold.widthOfTextAtSize(line2Part1, fontSize);
+  const p2W = fontNormal.widthOfTextAtSize(line2Part2, fontSize);
+  const startW = fontBold.widthOfTextAtSize(formattedStart, fontSize);
+  const p3W = fontNormal.widthOfTextAtSize(line2Part3, fontSize);
+  const endW = fontBold.widthOfTextAtSize(line2Part4, fontSize);
+  const totalL2 = p1W + p2W + startW + p3W + endW;
+  const line2X = (width - totalL2) / 2;
+
+  let curX = line2X;
   page.drawText(line2Part1, {
-    x: line2X,
-    y: 294,
-    size: line1FontSize,
+    x: curX,
+    y: 312,
+    size: fontSize,
     font: fontBold,
-    color: rgb(0.05, 0.1, 0.2),
+    color: boldColor,
   });
+  curX += p1W;
 
-  const p1W = fontBold.widthOfTextAtSize(line2Part1, line1FontSize);
-  page.drawText(formattedStart, {
-    x: line2X + p1W,
-    y: 294,
-    size: line1FontSize,
-    font: fontBold,
-    color: rgb(0.05, 0.1, 0.2),
-  });
-
-  const startW = fontBold.widthOfTextAtSize(formattedStart, line1FontSize);
   page.drawText(line2Part2, {
-    x: line2X + p1W + startW,
-    y: 294,
-    size: line1FontSize,
+    x: curX,
+    y: 312,
+    size: fontSize,
     font: fontNormal,
-    color: rgb(0.2, 0.25, 0.3),
+    color: textColor,
   });
+  curX += p2W;
 
-  const p2W = fontNormal.widthOfTextAtSize(line2Part2, line1FontSize);
-  page.drawText(`${formattedEnd}.`, {
-    x: line2X + p1W + startW + p2W,
-    y: 294,
-    size: line1FontSize,
+  page.drawText(formattedStart, {
+    x: curX,
+    y: 312,
+    size: fontSize,
     font: fontBold,
-    color: rgb(0.05, 0.1, 0.2),
+    color: boldColor,
+  });
+  curX += startW;
+
+  page.drawText(line2Part3, {
+    x: curX,
+    y: 312,
+    size: fontSize,
+    font: fontNormal,
+    color: textColor,
+  });
+  curX += p3W;
+
+  page.drawText(line2Part4, {
+    x: curX,
+    y: 312,
+    size: fontSize,
+    font: fontBold,
+    color: boldColor,
   });
 
   // 5. Generate QR Code image PNG buffer
   const verifyUrl = `${appUrl}/verify/certificate/${certificate.public_verification_code}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
-    width: 250,
+    width: 300,
     margin: 1,
     color: { dark: '#000000', light: '#ffffff' },
   });
   const qrImageBytes = Buffer.from(qrDataUrl.split(',')[1], 'base64');
   const qrImage = await pdfDoc.embedPng(qrImageBytes);
 
-  // The square border in the vector PDF is around x: 770, y: 64, size: 106x106
-  const qrSize = 100;
-  const qrX = 771;
-  const qrY = 66;
-
-  page.drawImage(qrImage, {
-    x: qrX,
-    y: qrY,
-    width: qrSize,
-    height: qrSize,
+  // Clear inner box cleanly before drawing QR code
+  page.drawRectangle({
+    x: 771,
+    y: 64,
+    width: 102,
+    height: 102,
+    color: rgb(1, 1, 1),
   });
 
-  // 6. Draw certificate number badge
+  // The square border in the vector PDF is at x: 767 to 877, y: 60 to 170
+  page.drawImage(qrImage, {
+    x: 772,
+    y: 65,
+    width: 100,
+    height: 100,
+  });
+
+  // 6. Draw certificate number badge under MSME
   const certNumber = certificate.certificate_number;
   page.drawText(certNumber, {
     x: 990,
