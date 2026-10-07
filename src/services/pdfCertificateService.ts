@@ -205,14 +205,26 @@ export async function generateOfficialCertificatePdf(
     height: qrSize,
   });
 
-  // 6. Draw certificate number badge under MSME
+  // 6. Cover any baked static number under MSME in the template and draw dynamic certificate number
+  // In template, area under MSME: img_y = 138 to 155 (pdf_y = 613 to 630), x = 950 to 1115
+  page.drawRectangle({
+    x: 950,
+    y: 613,
+    width: 165,
+    height: 20,
+    color: rgb(1, 1, 1),
+  });
+
   const certNumber = certificate.certificate_number;
+  const certNumberWidth = fontBold.widthOfTextAtSize(certNumber, 9.5);
+  // Align right under the MSME seal (MSME right edge is ~1075)
+  const certNumberX = 1075 - certNumberWidth;
   page.drawText(certNumber, {
-    x: 990,
-    y: 596,
-    size: 10,
+    x: certNumberX,
+    y: 618,
+    size: 9.5,
     font: fontBold,
-    color: rgb(0.3, 0.35, 0.4),
+    color: rgb(0.25, 0.3, 0.38),
   });
 
   return await pdfDoc.save();
