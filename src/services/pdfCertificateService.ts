@@ -164,7 +164,26 @@ export async function generateOfficialCertificatePdf(
     color: boldColor,
   });
 
-  // 5. Generate QR Code image PNG buffer with margin 0 for perfect centering
+  // 5. Draw official verification border box and centered QR code
+  // The new template has a clean space for the verification box.
+  // We draw a crisp border box centered at x: 822 (aligned with the right column and signature row)
+  const boxW = 108;
+  const boxH = 108;
+  const boxX = 768;
+  const boxY = 67;
+
+  // Draw clean rounded border frame for QR verification
+  page.drawRectangle({
+    x: boxX,
+    y: boxY,
+    width: boxW,
+    height: boxH,
+    color: rgb(1, 1, 1),
+    borderColor: rgb(0.12, 0.16, 0.22),
+    borderWidth: 1.5,
+  });
+
+  // Generate QR Code image PNG buffer with margin 0
   const verifyUrl = `${appUrl}/verify/certificate/${certificate.public_verification_code}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
     width: 300,
@@ -174,20 +193,10 @@ export async function generateOfficialCertificatePdf(
   const qrImageBytes = Buffer.from(qrDataUrl.split(',')[1], 'base64');
   const qrImage = await pdfDoc.embedPng(qrImageBytes);
 
-  // Clear inner box cleanly before drawing QR code
-  // The square border in the vector PDF is at x: 767 to 877 (w: 110), y: 60 to 170 (h: 110)
-  page.drawRectangle({
-    x: 770,
-    y: 63,
-    width: 104,
-    height: 104,
-    color: rgb(1, 1, 1),
-  });
-
-  // Perfectly centered inside the 110x110 border box with 7-8px equal margins on all sides
-  const qrSize = 95;
-  const qrX = 774.5;
-  const qrY = 74.5;
+  // Perfectly centered inside the border box with exact 8px equal padding on all 4 sides
+  const qrSize = 92;
+  const qrX = 776;
+  const qrY = 75;
 
   page.drawImage(qrImage, {
     x: qrX,
