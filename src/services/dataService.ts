@@ -1,6 +1,6 @@
 import { getTursoClient } from '@/lib/turso';
 import { initTursoSchema } from '@/lib/tursoSchema';
-import { generateVerificationToken, hashToken } from '@/lib/tokens';
+import { generateVerificationToken, hashToken, generateCryptoAlphanumeric } from '@/lib/tokens';
 import { 
   Person, Internship, IdCard, Certificate, ActivityLog, 
   CompanySettings, Department, Profile, PublicIdVerificationResponse, 
@@ -188,29 +188,40 @@ export const DataService = {
   async generateUniquePersonCode(personType: 'EMPLOYEE' | 'INTERN'): Promise<string> {
     await ensureDb();
     const db = getTursoClient();
-    const prefix = personType === 'EMPLOYEE' ? 'GR-EMP' : 'GR-INT';
+    const prefix = personType === 'EMPLOYEE' ? 'GRE-' : 'GRI-';
 
-    // Fetch all existing person codes for this type to guarantee zero collisions
-    const existingRes = await db.execute({
-      sql: 'SELECT person_code FROM people WHERE person_code LIKE ?',
-      args: [`${prefix}-%`],
-    });
-    const existingCodes = new Set(existingRes.rows.map(r => String(r.person_code)));
-
-    // Generate random 4-digit code (1000 - 9999), retrying until unique
-    let candidate = '';
     let attempts = 0;
-    while (attempts < 10000) {
-      const randNum = Math.floor(1000 + Math.random() * 9000); // 1000 to 9999
-      candidate = `${prefix}-${randNum}`;
-      if (!existingCodes.has(candidate)) {
+    while (attempts < 1000) {
+      const candidate = `${prefix}${generateCryptoAlphanumeric(7)}`;
+      const res = await db.execute({
+        sql: 'SELECT id FROM people WHERE person_code = ? LIMIT 1',
+        args: [candidate],
+      });
+      if (res.rows.length === 0) {
         return candidate;
       }
       attempts++;
     }
+    throw new Error('Failed to generate a unique Staff ID after multiple attempts');
+  },
 
-    // Fallback if 4-digit range becomes exhausted: use 5-digit random
-    return `${prefix}-${Math.floor(10000 + Math.random() * 90000)}`;
+  async generateUniqueCardNumber(): Promise<string> {
+    await ensureDb();
+    const db = getTursoClient();
+
+    let attempts = 0;
+    while (attempts < 1000) {
+      const candidate = `IDC-${generateCryptoAlphanumeric(7)}`;
+      const res = await db.execute({
+        sql: 'SELECT id FROM id_cards WHERE card_number = ? LIMIT 1',
+        args: [candidate],
+      });
+      if (res.rows.length === 0) {
+        return candidate;
+      }
+      attempts++;
+    }
+    throw new Error('Failed to generate a unique Card Reference after multiple attempts');
   },
 
   async generateUniqueCertificateNumber(issueDate: string): Promise<string> {
@@ -836,12 +847,12 @@ export const DataService = {
       await this.revokeIdCard(String(card.id), 'Superceded by reissued ID card', actor);
     }
 
-    const cardCountRes = await db.execute({
+    const previousCardsRes = await db.execute({
       sql: 'SELECT count(*) as count FROM id_cards WHERE person_id = ?',
       args: [personId],
     });
-    const count = Number(cardCountRes.rows[0].count) + 1;
-    const cardNumber = `IDC-${person.person_code}-v${count}`;
+    const isReissue = Number(previousCardsRes.rows[0].count) > 0;
+    const cardNumber = await this.generateUniqueCardNumber();
 
     const rawToken = generateVerificationToken('id_v_');
     const tokenHash = hashToken(rawToken);
@@ -877,7 +888,7 @@ export const DataService = {
       ],
     });
 
-    await this.logActivity(actor, count > 1 ? 'ID_REISSUED' : 'ID_ISSUED', 'ID_CARD', cardId, {
+    await this.logActivity(actor, isReissue ? 'ID_REISSUED' : 'ID_ISSUED', 'ID_CARD', cardId, {
       card_number: cardNumber,
       person_code: person.person_code,
     });

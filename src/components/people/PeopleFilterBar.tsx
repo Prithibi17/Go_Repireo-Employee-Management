@@ -77,7 +77,7 @@ export function PeopleFilterBar({ departments }: PeopleFilterBarProps) {
             type="text"
             defaultValue={currentSearch}
             onChange={(e) => updateParam('search', e.target.value)}
-            placeholder="Search by name, ID (GR-INT-0001), email, role..."
+            placeholder="Search by name, ID (e.g. GRI-5M8K2P7), email, role..."
             className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white text-slate-900"
           />
         </div>

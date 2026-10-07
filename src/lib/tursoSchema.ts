@@ -177,7 +177,11 @@ export async function initTursoSchema() {
     `CREATE TABLE IF NOT EXISTS app_sequences (
       name TEXT PRIMARY KEY,
       current_value INTEGER NOT NULL DEFAULT 0
-    );`
+    );`,
+
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_people_person_code ON people (person_code);`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_id_cards_card_number ON id_cards (card_number);`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_certificates_cert_number ON certificates (certificate_number);`
   ]);
 
   // Seed default sequence and initial company config if missing

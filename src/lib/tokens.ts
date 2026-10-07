@@ -15,3 +15,18 @@ export function generateVerificationToken(prefix: 'id_v_' | 'crt_v_'): string {
 export function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
+
+/**
+ * Generates cryptographically secure uppercase alphanumeric string.
+ * Uses A-Z and 0-9 (36 characters).
+ */
+export function generateCryptoAlphanumeric(length: number = 7): string {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    const randomIndex = crypto.randomInt(0, chars.length);
+    result += chars[randomIndex];
+  }
+  return result;
+}
+

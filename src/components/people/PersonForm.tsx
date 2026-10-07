@@ -147,7 +147,7 @@ export function PersonForm({ departments, managers, initialData, personId }: Per
         <p className="text-xs text-slate-500">
           {isEditing
             ? 'The person identifier and sequence cannot be modified after registration.'
-            : 'The system will safely generate a permanent, non-sequential unique ID (GR-EMP-XXXX or GR-INT-XXXX).'}
+            : 'The system will safely generate a permanent, secure unique Staff ID (GRE-XXXXXXX or GRI-XXXXXXX).'}
         </p>
 
         {!isEditing && (
@@ -172,7 +172,7 @@ export function PersonForm({ departments, managers, initialData, personId }: Per
                   Intern
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Generates <code className="text-slate-800 font-semibold">GR-INT-XXXX</code>. Unlocks college details, internship project tracking, ID issuance, and certificate generation upon completion.
+                  Generates <code className="text-slate-800 font-semibold">GRI-XXXXXXX</code>. Unlocks college details, internship project tracking, ID issuance, and certificate generation upon completion.
                 </p>
               </div>
             </label>
@@ -197,7 +197,7 @@ export function PersonForm({ departments, managers, initialData, personId }: Per
                   Employee
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Generates <code className="text-slate-800 font-semibold">GR-EMP-XXXX</code>. Full-time or contract staff with employment details, department roles, and official ID credentials.
+                  Generates <code className="text-slate-800 font-semibold">GRE-XXXXXXX</code>. Full-time or contract staff with employment details, department roles, and official ID credentials.
                 </p>
               </div>
             </label>

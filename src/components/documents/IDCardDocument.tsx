@@ -255,7 +255,7 @@ export function IDCardDocument({
                 </div>
                 <div className="flex flex-col items-center">
                   <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
-                    ID Ref
+                    {person.person_type === 'EMPLOYEE' ? 'EMPLOYEE ID' : 'INTERN ID'}
                   </span>
                   <span className="px-2 py-0.5 rounded-md text-[9.5px] font-mono font-bold text-slate-700 bg-white border border-slate-300 shadow-2xs">
                     {person.person_code}
