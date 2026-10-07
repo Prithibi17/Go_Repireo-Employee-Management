@@ -126,8 +126,8 @@ export function IDCardDocument({
                 className="w-10 h-10 object-contain drop-shadow-2xs" 
               />
               <div className="text-left flex flex-col">
-                <span className="text-[13px] font-black tracking-tight text-[#0f274a] uppercase font-sans leading-none">
-                  REPIREO_PRO
+                <span className="text-[14px] font-black tracking-tight text-[#0f274a] uppercase font-sans leading-none">
+                  Go_Repireo
                 </span>
                 <span className="text-[7px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">
                   BUILD | REPAIR | MAINTAIN
@@ -222,7 +222,7 @@ export function IDCardDocument({
                 className="w-9 h-9 object-contain" 
               />
               <span className="text-[14px] font-black tracking-tight text-[#0f274a] uppercase font-sans">
-                REPIREO_PRO
+                Go_Repireo
               </span>
             </div>
             <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
