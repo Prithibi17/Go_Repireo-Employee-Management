@@ -80,16 +80,6 @@ export function CertificateDocument({
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
 
-          {/* Certificate Number Stamp (Top Right below MSME) */}
-          <div 
-            style={{ top: '141px', right: '48px' }}
-            className="absolute z-10 text-right"
-          >
-            <span className="font-mono text-[10px] font-bold text-slate-600 bg-white/90 px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
-              {certificate.certificate_number}
-            </span>
-          </div>
-
           {/* Recipient Name Dynamic Field */}
           <div 
             style={{ top: '280px', left: '120px', right: '120px' }}
