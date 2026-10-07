@@ -114,7 +114,7 @@ export function CertificateDetailPageClient({
         <CertificateDocument
           certificate={certificate}
           company={company}
-          appUrl={typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}
+          appUrl={process.env.NEXT_PUBLIC_APP_URL || 'https://go-repireo-employee-management.vercel.app'}
         />
       </div>
 

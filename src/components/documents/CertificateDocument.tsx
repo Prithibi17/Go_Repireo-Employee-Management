@@ -19,7 +19,7 @@ interface CertificateDocumentProps {
 export function CertificateDocument({
   certificate,
   company,
-  appUrl = 'http://localhost:3000',
+  appUrl = 'https://go-repireo-employee-management.vercel.app',
   showActions = true,
 }: CertificateDocumentProps) {
   const certRef = useRef<HTMLDivElement>(null);

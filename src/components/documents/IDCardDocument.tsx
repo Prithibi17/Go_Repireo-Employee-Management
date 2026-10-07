@@ -20,7 +20,7 @@ export function IDCardDocument({
   card,
   person,
   company,
-  appUrl = 'http://localhost:3000',
+  appUrl = 'https://go-repireo-employee-management.vercel.app',
   showActions = true,
 }: IDCardDocumentProps) {
   const cardContainerRef = useRef<HTMLDivElement>(null);

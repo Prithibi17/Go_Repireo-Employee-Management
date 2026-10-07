@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/utils';
 
 export async function generateOfficialCertificatePdf(
   certificate: Certificate,
-  appUrl: string = 'http://localhost:3000'
+  appUrl: string = 'https://go-repireo-employee-management.vercel.app'
 ): Promise<Uint8Array> {
   const templatePath = path.join(process.cwd(), 'public', 'official-certificate-template.pdf');
   const templateBytes = fs.readFileSync(templatePath);

@@ -419,7 +419,7 @@ export function PersonProfileClient({
                 card={activeIdCard}
                 person={person}
                 company={company}
-                appUrl={typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}
+                appUrl="https://go-repireo-employee-management.vercel.app"
               />
             </div>
           ) : (
@@ -465,7 +465,7 @@ export function PersonProfileClient({
                   <CertificateDocument
                     certificate={cert}
                     company={company}
-                    appUrl={typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}
+                    appUrl="https://go-repireo-employee-management.vercel.app"
                   />
                 </div>
               ))}
