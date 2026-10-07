@@ -557,6 +557,111 @@ export const DataService = {
     return created!;
   },
 
+  async updatePerson(id: string, data: Partial<PersonFormData>, actor: { id?: string; name: string }): Promise<Person> {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await this.getPersonById(id);
+    if (!existing) throw new Error('Person not found');
+
+    const now = new Date().toISOString();
+
+    await db.execute({
+      sql: `UPDATE people SET
+        full_name = COALESCE(?, full_name),
+        display_name = ?,
+        profile_photo_path = COALESCE(?, profile_photo_path),
+        personal_email = ?,
+        company_email = ?,
+        phone = ?,
+        date_of_birth = ?,
+        gender = ?,
+        address_line = ?,
+        city = COALESCE(?, city),
+        state = COALESCE(?, state),
+        postal_code = ?,
+        country = COALESCE(?, country),
+        department_id = ?,
+        designation = COALESCE(?, designation),
+        joining_date = COALESCE(?, joining_date),
+        reporting_manager_id = ?,
+        work_location = COALESCE(?, work_location),
+        employment_type = ?,
+        emergency_contact_name = ?,
+        emergency_contact_phone = ?,
+        internal_notes = ?,
+        updated_at = ?
+      WHERE id = ?`,
+      args: [
+        (data.full_name !== undefined ? data.full_name : existing.full_name) ?? null,
+        (data.display_name !== undefined ? data.display_name : existing.display_name) ?? null,
+        (data.profile_photo_path !== undefined ? data.profile_photo_path : existing.profile_photo_path) ?? null,
+        (data.personal_email !== undefined ? data.personal_email : existing.personal_email) ?? null,
+        (data.company_email !== undefined ? data.company_email : existing.company_email) ?? null,
+        (data.phone !== undefined ? data.phone : existing.phone) ?? null,
+        (data.date_of_birth !== undefined ? data.date_of_birth : existing.date_of_birth) ?? null,
+        (data.gender !== undefined ? data.gender : existing.gender) ?? null,
+        (data.address_line !== undefined ? data.address_line : existing.address_line) ?? null,
+        (data.city !== undefined ? data.city : existing.city) ?? null,
+        (data.state !== undefined ? data.state : existing.state) ?? null,
+        (data.postal_code !== undefined ? data.postal_code : existing.postal_code) ?? null,
+        (data.country !== undefined ? data.country : existing.country) ?? null,
+        (data.department_id !== undefined ? data.department_id : existing.department_id) ?? null,
+        (data.designation !== undefined ? data.designation : existing.designation) ?? null,
+        (data.joining_date !== undefined ? data.joining_date : existing.joining_date) ?? null,
+        (data.reporting_manager_id !== undefined ? data.reporting_manager_id : existing.reporting_manager_id) ?? null,
+        (data.work_location !== undefined ? data.work_location : existing.work_location) ?? null,
+        (data.employment_type !== undefined ? data.employment_type : existing.employment_type) ?? null,
+        (data.emergency_contact_name !== undefined ? data.emergency_contact_name : existing.emergency_contact_name) ?? null,
+        (data.emergency_contact_phone !== undefined ? data.emergency_contact_phone : existing.emergency_contact_phone) ?? null,
+        (data.internal_notes !== undefined ? data.internal_notes : existing.internal_notes) ?? null,
+        now,
+        id,
+      ] as any,
+    });
+
+    // Update active internship details if this person has an internship
+    if (existing.person_type === 'INTERN' && existing.internships && existing.internships.length > 0) {
+      const activeInt = existing.internships[0];
+      await db.execute({
+        sql: `UPDATE internships SET
+          college_name = ?,
+          course = ?,
+          specialization = ?,
+          domain = COALESCE(?, domain),
+          internship_title = COALESCE(?, internship_title),
+          project_name = ?,
+          start_date = COALESCE(?, start_date),
+          end_date = COALESCE(?, end_date),
+          mode = COALESCE(?, mode),
+          stipend = ?,
+          updated_at = ?
+        WHERE id = ?`,
+        args: [
+          (data.college_name !== undefined ? data.college_name : activeInt.college_name) ?? null,
+          (data.course !== undefined ? data.course : activeInt.course) ?? null,
+          (data.specialization !== undefined ? data.specialization : activeInt.specialization) ?? null,
+          (data.domain !== undefined ? data.domain : activeInt.domain) ?? null,
+          (data.internship_title !== undefined ? data.internship_title : activeInt.internship_title) ?? null,
+          (data.project_name !== undefined ? data.project_name : activeInt.project_name) ?? null,
+          (data.internship_start_date !== undefined ? data.internship_start_date : activeInt.start_date) ?? null,
+          (data.internship_end_date !== undefined ? data.internship_end_date : activeInt.end_date) ?? null,
+          (data.internship_mode !== undefined ? data.internship_mode : activeInt.mode) ?? null,
+          (data.stipend !== undefined ? data.stipend : activeInt.stipend) ?? null,
+          now,
+          activeInt.id,
+        ] as any,
+      });
+    }
+
+    await this.logActivity(actor, 'PERSON_UPDATED' as any, 'PERSON', id, {
+      code: existing.person_code,
+      name: data.full_name || existing.full_name,
+    });
+
+    const updated = await this.getPersonById(id);
+    return updated!;
+  },
+
   async archivePerson(id: string, actor: { id?: string; name: string }): Promise<Person> {
     await ensureDb();
     const db = getTursoClient();

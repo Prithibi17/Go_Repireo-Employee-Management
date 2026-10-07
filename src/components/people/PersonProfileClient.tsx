@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Person, Internship, IdCard, Certificate, CompanySettings, ActivityLog } from '@/types';
 import { PersonAvatar, PersonStatusBadge, PersonTypeBadge } from '@/components/ui/Badges';
@@ -12,7 +13,7 @@ import { formatDate, formatDateTime } from '@/lib/utils';
 import { 
   CreditCard, Award, CheckCircle2, Archive, 
   RefreshCw, Ban, Plus, Building2, Calendar, MapPin, 
-  Mail, Phone, Clock, FileText, Activity, ShieldCheck, Trash2
+  Mail, Phone, Clock, FileText, Activity, ShieldCheck, Trash2, Edit
 } from 'lucide-react';
 
 interface PersonProfileClientProps {
@@ -274,6 +275,15 @@ export function PersonProfileClient({
                 Generate Certificate
               </button>
             )}
+
+            {/* Edit Profile Action */}
+            <Link
+              href={`/people/${person.id}/edit`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg shadow-xs transition"
+            >
+              <Edit className="w-3.5 h-3.5 text-slate-600" />
+              Edit Profile
+            </Link>
 
             {/* Archive */}
             {person.status !== 'ARCHIVED' && (

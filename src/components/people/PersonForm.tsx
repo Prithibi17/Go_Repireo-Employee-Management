@@ -9,55 +9,61 @@ import Link from 'next/link';
 interface PersonFormProps {
   departments: Department[];
   managers: Person[];
+  initialData?: any;
+  personId?: string;
 }
 
-export function PersonForm({ departments, managers }: PersonFormProps) {
+export function PersonForm({ departments, managers, initialData, personId }: PersonFormProps) {
   const router = useRouter();
-  const [personType, setPersonType] = useState<'EMPLOYEE' | 'INTERN'>('INTERN');
+  const isEditing = Boolean(personId && initialData);
+  const [personType, setPersonType] = useState<'EMPLOYEE' | 'INTERN'>(initialData?.person_type || 'INTERN');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Active internship if available
+  const activeInt = initialData?.internships?.[0];
 
   // Form State
   const [formData, setFormData] = useState({
     // Basic
-    full_name: '',
-    display_name: '',
-    profile_photo_path: '',
-    personal_email: '',
-    company_email: '',
-    phone: '',
-    date_of_birth: '',
-    gender: 'Male',
-    address_line: '',
-    city: 'Kolkata',
-    state: 'West Bengal',
-    postal_code: '',
-    country: 'India',
+    full_name: initialData?.full_name || '',
+    display_name: initialData?.display_name || '',
+    profile_photo_path: initialData?.profile_photo_path || '',
+    personal_email: initialData?.personal_email || '',
+    company_email: initialData?.company_email || '',
+    phone: initialData?.phone || '',
+    date_of_birth: initialData?.date_of_birth || '',
+    gender: initialData?.gender || 'Male',
+    address_line: initialData?.address_line || '',
+    city: initialData?.city || 'Kolkata',
+    state: initialData?.state || 'West Bengal',
+    postal_code: initialData?.postal_code || '',
+    country: initialData?.country || 'India',
 
     // Professional
-    department_id: departments[0]?.id || '',
-    designation: '',
-    joining_date: new Date().toISOString().split('T')[0],
-    reporting_manager_id: '',
-    work_location: 'Kolkata, WB',
-    employment_type: 'Full-time',
+    department_id: initialData?.department_id || departments[0]?.id || '',
+    designation: initialData?.designation || '',
+    joining_date: initialData?.joining_date || new Date().toISOString().split('T')[0],
+    reporting_manager_id: initialData?.reporting_manager_id || '',
+    work_location: initialData?.work_location || 'Kolkata, WB',
+    employment_type: initialData?.employment_type || 'Full-time',
 
     // Private HR
-    emergency_contact_name: '',
-    emergency_contact_phone: '',
-    internal_notes: '',
+    emergency_contact_name: initialData?.emergency_contact_name || '',
+    emergency_contact_phone: initialData?.emergency_contact_phone || '',
+    internal_notes: initialData?.internal_notes || '',
 
     // Intern Specific
-    college_name: '',
-    course: '',
-    specialization: '',
-    domain: 'Full Stack Web Development',
-    internship_title: 'Software Development Intern',
-    project_name: '',
-    internship_start_date: new Date().toISOString().split('T')[0],
-    internship_end_date: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
-    internship_mode: 'Remote',
-    stipend: '₹10,000 / month',
+    college_name: activeInt?.college_name || initialData?.college_name || '',
+    course: activeInt?.course || initialData?.course || '',
+    specialization: activeInt?.specialization || initialData?.specialization || '',
+    domain: activeInt?.domain || initialData?.domain || 'Full Stack Web Development',
+    internship_title: activeInt?.internship_title || initialData?.internship_title || 'Software Development Intern',
+    project_name: activeInt?.project_name || initialData?.project_name || '',
+    internship_start_date: activeInt?.start_date || initialData?.internship_start_date || new Date().toISOString().split('T')[0],
+    internship_end_date: activeInt?.end_date || initialData?.internship_end_date || new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+    internship_mode: activeInt?.mode || initialData?.internship_mode || 'Remote',
+    stipend: activeInt?.stipend || initialData?.stipend || '₹10,000 / month',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -82,22 +88,41 @@ export function PersonForm({ departments, managers }: PersonFormProps) {
     setError('');
 
     try {
-      const res = await fetch('/api/people', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          person_type: personType,
-          designation: formData.designation || (personType === 'INTERN' ? formData.internship_title : 'Engineer'),
-        }),
-      });
+      if (isEditing) {
+        const res = await fetch(`/api/people/${personId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            designation: formData.designation || (personType === 'INTERN' ? formData.internship_title : 'Engineer'),
+          }),
+        });
 
-      const result = await res.json();
-      if (result.success && result.person?.id) {
-        router.push(`/people/${result.person.id}`);
-        router.refresh();
+        const result = await res.json();
+        if (result.success && result.person?.id) {
+          router.push(`/people/${result.person.id}`);
+          router.refresh();
+        } else {
+          setError(result.error || 'Failed to update person record');
+        }
       } else {
-        setError(result.error || 'Failed to create person record');
+        const res = await fetch('/api/people', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            person_type: personType,
+            designation: formData.designation || (personType === 'INTERN' ? formData.internship_title : 'Engineer'),
+          }),
+        });
+
+        const result = await res.json();
+        if (result.success && result.person?.id) {
+          router.push(`/people/${result.person.id}`);
+          router.refresh();
+        } else {
+          setError(result.error || 'Failed to create person record');
+        }
       }
     } catch {
       setError('An unexpected error occurred while saving the record.');
@@ -116,62 +141,68 @@ export function PersonForm({ departments, managers }: PersonFormProps) {
 
       {/* 1. Step 1: Person Type Selection */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-        <h2 className="text-base font-bold text-slate-900">1. Select Person Type</h2>
+        <h2 className="text-base font-bold text-slate-900">
+          {isEditing ? `Identity: ${initialData?.person_code || ''}` : '1. Select Person Type'}
+        </h2>
         <p className="text-xs text-slate-500">
-          The system will safely generate a permanent, immutable ID sequence (<code className="text-blue-600 font-bold">GR-EMP-XXXX</code> or <code className="text-blue-600 font-bold">GR-INT-XXXX</code>).
+          {isEditing
+            ? 'The person identifier and sequence cannot be modified after registration.'
+            : 'The system will safely generate a permanent, non-sequential unique ID (GR-EMP-XXXX or GR-INT-XXXX).'}
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-          <label
-            className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition ${
-              personType === 'INTERN'
-                ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-500/20'
-                : 'border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <input
-              type="radio"
-              name="person_type"
-              checked={personType === 'INTERN'}
-              onChange={() => setPersonType('INTERN')}
-              className="mt-1 text-blue-600 focus:ring-blue-500"
-            />
-            <div>
-              <div className="flex items-center gap-1.5 font-bold text-slate-900 text-sm">
-                <GraduationCap className="w-4 h-4 text-teal-600" />
-                Intern
+        {!isEditing && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <label
+              className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition ${
+                personType === 'INTERN'
+                  ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-500/20'
+                  : 'border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="person_type"
+                checked={personType === 'INTERN'}
+                onChange={() => setPersonType('INTERN')}
+                className="mt-1 text-blue-600 focus:ring-blue-500"
+              />
+              <div>
+                <div className="flex items-center gap-1.5 font-bold text-slate-900 text-sm">
+                  <GraduationCap className="w-4 h-4 text-teal-600" />
+                  Intern
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Generates <code className="text-slate-800 font-semibold">GR-INT-XXXX</code>. Unlocks college details, internship project tracking, ID issuance, and certificate generation upon completion.
+                </p>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Generates <code className="text-slate-800 font-semibold">GR-INT-XXXX</code>. Unlocks college details, internship project tracking, ID issuance, and certificate generation upon completion.
-              </p>
-            </div>
-          </label>
+            </label>
 
-          <label
-            className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition ${
-              personType === 'EMPLOYEE'
-                ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-500/20'
-                : 'border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <input
-              type="radio"
-              name="person_type"
-              checked={personType === 'EMPLOYEE'}
-              onChange={() => setPersonType('EMPLOYEE')}
-              className="mt-1 text-blue-600 focus:ring-blue-500"
-            />
-            <div>
-              <div className="flex items-center gap-1.5 font-bold text-slate-900 text-sm">
-                <UserCheck className="w-4 h-4 text-indigo-600" />
-                Employee
+            <label
+              className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition ${
+                personType === 'EMPLOYEE'
+                  ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-500/20'
+                  : 'border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="person_type"
+                checked={personType === 'EMPLOYEE'}
+                onChange={() => setPersonType('EMPLOYEE')}
+                className="mt-1 text-blue-600 focus:ring-blue-500"
+              />
+              <div>
+                <div className="flex items-center gap-1.5 font-bold text-slate-900 text-sm">
+                  <UserCheck className="w-4 h-4 text-indigo-600" />
+                  Employee
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Generates <code className="text-slate-800 font-semibold">GR-EMP-XXXX</code>. Full-time or contract staff with employment details, department roles, and official ID credentials.
+                </p>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Generates <code className="text-slate-800 font-semibold">GR-EMP-XXXX</code>. Full-time or contract staff with employment details, department roles, and official ID credentials.
-              </p>
-            </div>
-          </label>
-        </div>
+            </label>
+          </div>
+        )}
       </div>
 
       {/* 2. Basic Information */}
@@ -550,7 +581,7 @@ export function PersonForm({ departments, managers }: PersonFormProps) {
       {/* Submit Toolbar */}
       <div className="flex items-center justify-between pt-4 border-t border-slate-200">
         <Link
-          href="/people"
+          href={isEditing ? `/people/${personId}` : '/people'}
           className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -561,7 +592,9 @@ export function PersonForm({ departments, managers }: PersonFormProps) {
           disabled={loading}
           className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-sm transition disabled:opacity-50"
         >
-          {loading ? 'Generating ID & Saving...' : 'Save & Issue Person ID'}
+          {loading
+            ? (isEditing ? 'Saving Changes...' : 'Generating ID & Saving...')
+            : (isEditing ? 'Save Changes' : 'Save & Issue Person ID')}
         </button>
       </div>
     </form>
