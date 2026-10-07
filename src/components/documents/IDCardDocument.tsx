@@ -100,133 +100,176 @@ export function IDCardDocument({
       {/* Side-by-side ID Card Front & Back */}
       <div 
         ref={cardContainerRef}
-        className="flex flex-wrap items-center justify-center gap-8 p-4 bg-slate-50 rounded-2xl border border-slate-200/80 shadow-xs print:bg-white print:border-none print:shadow-none print:p-0"
+        className="flex flex-wrap items-center justify-center gap-10 p-8 bg-slate-100/60 rounded-3xl border border-slate-200 shadow-inner print:bg-white print:border-none print:shadow-none print:p-0"
       >
         {/* ================= ID CARD FRONT ================= */}
         <div 
-          style={{ width: '240px', height: '380px' }}
-          className="relative bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col justify-between text-slate-800 print:shadow-none print:border print:border-slate-300"
+          style={{ width: '280px', height: '445px' }}
+          className="relative bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden flex flex-col justify-between text-slate-800 print:shadow-none print:border print:border-slate-300 select-none"
         >
-          {/* Top Brand Stripe */}
-          <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 p-3 text-white text-center flex flex-col items-center justify-center relative">
-            <div className="w-7 h-7 rounded-md bg-white p-0.5 shadow-xs mb-1">
+          {/* Top Geometric Accent Bars: Blue on left, Orange on right */}
+          <div className="absolute top-0 left-0 right-0 h-[6px] flex">
+            <div className="w-[62%] h-full bg-[#16428c] rounded-bl-xs" />
+            <div className="w-[38%] h-full bg-[#f97316]" />
+          </div>
+
+          {/* Background subtle geometric watermark */}
+          <div className="absolute inset-0 opacity-[0.025] pointer-events-none bg-[radial-gradient(#16428c_1px,transparent_1px)] [background-size:12px_12px]" />
+
+          {/* Card Content Container */}
+          <div className="relative z-10 flex-1 flex flex-col items-center pt-5 pb-3 px-5 text-center justify-between">
+            {/* Header: Mascot + Company Wordmark */}
+            <div className="flex items-center justify-center gap-2.5 pt-1">
               <img 
-                src={company.logo_url || '/gorepireo-logo.png'} 
+                src="/gorepireo-mascot-modified.png" 
                 alt="Go_Repireo" 
-                className="w-full h-full object-contain" 
+                className="w-10 h-10 object-contain drop-shadow-2xs" 
               />
-            </div>
-            <h4 className="text-xs font-extrabold tracking-wider uppercase">{company.company_name}</h4>
-            <p className="text-[8px] font-medium text-blue-100 tracking-wide">{company.tagline}</p>
-          </div>
-
-          {/* Photo & Details */}
-          <div className="flex-1 flex flex-col items-center justify-center px-4 py-2 text-center">
-            {/* Profile Photo */}
-            <div className="w-20 h-20 rounded-full border-2 border-blue-600 p-0.5 shadow-xs mb-2">
-              {person.profile_photo_path ? (
-                <img 
-                  src={person.profile_photo_path} 
-                  alt={person.full_name} 
-                  className="w-full h-full rounded-full object-cover" 
-                />
-              ) : (
-                <div className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-700 text-lg">
-                  {person.full_name.charAt(0)}
-                </div>
-              )}
-            </div>
-
-            <h3 className="font-bold text-slate-900 text-sm leading-tight tracking-tight">
-              {person.full_name}
-            </h3>
-            <p className="text-[11px] font-medium text-slate-600 mt-0.5 line-clamp-1">
-              {person.designation}
-            </p>
-
-            {/* Badges */}
-            <div className="flex items-center gap-1.5 my-2">
-              <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider ${
-                person.person_type === 'EMPLOYEE' ? 'bg-indigo-100 text-indigo-800' : 'bg-teal-100 text-teal-800'
-              }`}>
-                {person.person_type}
-              </span>
-              <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
-                {person.person_code}
-              </span>
-            </div>
-
-            <p className="text-[10px] text-slate-500 font-medium">
-              Dept: {person.department?.name || 'General'}
-            </p>
-
-            {/* QR Code Container */}
-            <div className="mt-2 flex flex-col items-center">
-              <div className="p-1 bg-white rounded border border-slate-200 shadow-2xs">
-                <QRCodeImage url={verifyUrl} size={64} />
+              <div className="text-left flex flex-col">
+                <span className="text-[13px] font-black tracking-tight text-[#0f274a] uppercase font-sans leading-none">
+                  REPIREO_PRO
+                </span>
+                <span className="text-[7px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">
+                  BUILD | REPAIR | MAINTAIN
+                </span>
               </div>
-              <span className="text-[7.5px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5">
-                Scan to Verify
+            </div>
+
+            {/* Profile Photo with rounded-2xl container & dual border matching reference */}
+            <div className="my-auto flex flex-col items-center">
+              <div className="w-[108px] h-[108px] rounded-2xl p-[3px] bg-white border-[1.5px] border-slate-200 shadow-md">
+                <div className="w-full h-full rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+                  {person.profile_photo_path ? (
+                    <img 
+                      src={person.profile_photo_path} 
+                      alt={person.full_name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-b from-slate-200 to-slate-300 flex items-center justify-center font-black text-slate-600 text-3xl uppercase font-sans">
+                      {person.full_name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Name & Title */}
+              <h3 className="font-black text-[#0f274a] text-[17px] tracking-tight leading-tight uppercase font-sans mt-2.5">
+                {person.full_name}
+              </h3>
+              <p className="text-[11px] font-bold text-slate-600 tracking-wider uppercase mt-0.5">
+                {person.designation || (person.person_type === 'EMPLOYEE' ? 'EMPLOYEE' : 'INTERN')}
+              </p>
+
+              {/* Status & Code pill row matching reference */}
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex flex-col items-center">
+                  <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    Status
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-md text-[9.5px] font-extrabold uppercase tracking-wide bg-[#1e40af] text-white shadow-2xs">
+                    {person.status === 'ACTIVE' 
+                      ? (person.person_type === 'EMPLOYEE' ? 'EMPLOYEE' : 'INTERN') 
+                      : person.status}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    ID Ref
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md text-[9.5px] font-mono font-bold text-slate-700 bg-white border border-slate-300 shadow-2xs">
+                    {person.person_code}
+                  </span>
+                </div>
+              </div>
+
+              {/* Department Row */}
+              <p className="text-[9.5px] font-bold text-slate-700 mt-2 uppercase tracking-wide">
+                Department: <span className="text-slate-900 font-extrabold">{person.department?.name || 'TECHNOLOGY'}</span>
+              </p>
+            </div>
+
+            {/* QR Code inside bordered container */}
+            <div className="flex flex-col items-center mb-1">
+              <div className="p-1 bg-white rounded-lg border border-slate-300 shadow-xs">
+                <QRCodeImage url={verifyUrl} size={70} margin={0} />
+              </div>
+              <span className="text-[7.5px] font-extrabold text-slate-500 uppercase tracking-widest mt-1">
+                SCAN TO VERIFY
               </span>
             </div>
           </div>
 
-          {/* Bottom Card Bar */}
-          <div className="bg-slate-900 py-1 text-center">
-            <span className="text-[7.5px] font-bold text-blue-400 tracking-widest uppercase">
-              LEARN • BUILD • GROW
+          {/* Bottom Security Footer */}
+          <div className="border-t border-slate-100 py-1.5 bg-slate-50/90 text-center">
+            <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">
+              SECURE DIGITAL ID • TAMPER-PROOF • VERIFIED
             </span>
           </div>
         </div>
 
         {/* ================= ID CARD BACK ================= */}
         <div 
-          style={{ width: '240px', height: '380px' }}
-          className="relative bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col justify-between text-slate-800 print:shadow-none print:border print:border-slate-300 p-4"
+          style={{ width: '280px', height: '445px' }}
+          className="relative bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden flex flex-col justify-between text-slate-800 print:shadow-none print:border print:border-slate-300 select-none p-5"
         >
-          {/* Header */}
-          <div className="border-b border-slate-200 pb-2 text-center">
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-              {company.company_name}
-            </h4>
-            <p className="text-[8.5px] text-slate-500">Official Identification Credential</p>
+          {/* Header with Mascot & Title */}
+          <div className="flex flex-col items-center text-center pt-1 border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <img 
+                src="/gorepireo-mascot-modified.png" 
+                alt="Go_Repireo" 
+                className="w-9 h-9 object-contain" 
+              />
+              <span className="text-[14px] font-black tracking-tight text-[#0f274a] uppercase font-sans">
+                REPIREO_PRO
+              </span>
+            </div>
+            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+              Official Identification Credential
+            </p>
           </div>
 
-          {/* Metadata info */}
-          <div className="space-y-2 text-[10px] my-auto">
-            <div className="flex justify-between py-1 border-b border-slate-100">
+          {/* Table of Verified Metadata */}
+          <div className="my-auto space-y-2.5 text-[11px] px-1">
+            <div className="flex justify-between items-center py-1 border-b border-slate-100">
               <span className="text-slate-500 font-medium">Issue Date:</span>
-              <span className="font-semibold text-slate-800">{formatDate(card.valid_from)}</span>
+              <span className="font-bold text-slate-900">{formatDate(card.valid_from)}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
+            <div className="flex justify-between items-center py-1 border-b border-slate-100">
               <span className="text-slate-500 font-medium">Valid Until:</span>
-              <span className="font-semibold text-slate-800">{formatDate(card.valid_until)}</span>
+              <span className="font-bold text-slate-900">{formatDate(card.valid_until)}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500 font-medium">Card Ref:</span>
-              <span className="font-mono text-[9px] text-slate-700">{card.card_number}</span>
+            <div className="flex justify-between items-center py-1 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Card Ref.:</span>
+              <span className="font-mono text-[10px] font-bold text-slate-800">{card.card_number}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
+            <div className="flex justify-between items-center py-1 border-b border-slate-100">
               <span className="text-slate-500 font-medium">Website:</span>
-              <span className="font-medium text-blue-600">{company.website?.replace('https://', '')}</span>
+              <span className="font-semibold text-blue-600">
+                {company.website?.replace(/^https?:\/\//, '') || 'gorepireo.in'}
+              </span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
+            <div className="flex justify-between items-center py-1 border-b border-slate-100">
               <span className="text-slate-500 font-medium">Support:</span>
-              <span className="text-slate-700">{company.support_email}</span>
-            </div>
-
-            {/* Emergency note */}
-            <div className="bg-slate-50 p-2.5 rounded border border-slate-200 text-center mt-3">
-              <p className="text-[8.5px] text-slate-600 leading-snug">
-                This credential is the property of <strong className="text-slate-900">{company.company_name}</strong>. If found, please return to the company office or contact support.
-              </p>
+              <span className="font-semibold text-slate-800">{company.support_email}</span>
             </div>
           </div>
 
-          {/* Footer security tag */}
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-center gap-1 text-[8px] text-slate-400">
-            <ShieldCheck className="w-3 h-3 text-blue-600" />
-            <span>Digital QR Tamper-Proof Verified</span>
+          {/* Center Verified Badge */}
+          <div className="flex flex-col items-center justify-center my-1 text-center">
+            <div className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-700 mb-1">
+              <ShieldCheck className="w-5 h-5 text-slate-800" />
+            </div>
+            <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider">
+              SECURE DIGITAL ID • TAMPER-PROOF • VERIFIED
+            </span>
+          </div>
+
+          {/* Bottom Geometric Accent Bars: Blue on left, Orange on right */}
+          <div className="absolute bottom-0 left-0 right-0 h-[6px] flex">
+            <div className="w-[62%] h-full bg-[#16428c]" />
+            <div className="w-[38%] h-full bg-[#f97316]" />
           </div>
         </div>
       </div>
