@@ -12,7 +12,7 @@ import { formatDate, formatDateTime } from '@/lib/utils';
 import { 
   CreditCard, Award, CheckCircle2, Archive, 
   RefreshCw, Ban, Plus, Building2, Calendar, MapPin, 
-  Mail, Phone, Clock, FileText, Activity, ShieldCheck
+  Mail, Phone, Clock, FileText, Activity, ShieldCheck, Trash2
 } from 'lucide-react';
 
 interface PersonProfileClientProps {
@@ -65,6 +65,30 @@ export function PersonProfileClient({
   });
 
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [certToDelete, setCertToDelete] = useState<Certificate | null>(null);
+  const [showDeleteCertDialog, setShowDeleteCertDialog] = useState(false);
+
+  const handleDeleteCertificate = async () => {
+    if (!certToDelete) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/certificates/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ certificate_id: certToDelete.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowDeleteCertDialog(false);
+        setCertToDelete(null);
+        router.refresh();
+      } else {
+        alert(data.error || 'Failed to delete certificate');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handlers
   const handleGenerateId = async () => {
@@ -460,6 +484,19 @@ export function PersonProfileClient({
                         Issued: {formatDate(cert.issue_date)} • Role: {cert.role_snapshot} ({cert.department_snapshot})
                       </p>
                     </div>
+
+                    {(userRole === 'OWNER' || userRole === 'ADMIN') && (
+                      <button
+                        onClick={() => {
+                          setCertToDelete(cert);
+                          setShowDeleteCertDialog(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete Certificate
+                      </button>
+                    )}
                   </div>
 
                   <CertificateDocument
@@ -691,6 +728,21 @@ export function PersonProfileClient({
         isLoading={loading}
         onConfirm={handleArchive}
         onCancel={() => setShowArchiveDialog(false)}
+      />
+
+      {/* 6. Delete Certificate Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteCertDialog}
+        title="Delete Certificate Permanently?"
+        description={`Are you sure you want to completely delete certificate ${certToDelete?.certificate_number}? This will remove it from the system entirely so it no longer appears in the list or scans.`}
+        confirmLabel="Delete Certificate"
+        variant="danger"
+        isLoading={loading}
+        onConfirm={handleDeleteCertificate}
+        onCancel={() => {
+          setShowDeleteCertDialog(false);
+          setCertToDelete(null);
+        }}
       />
     </div>
   );

@@ -184,7 +184,64 @@ export const DataService = {
     };
   },
 
-  // === SEQUENCES ===
+  // === SEQUENCES & UNIQUE IDENTIFIERS ===
+  async generateUniquePersonCode(personType: 'EMPLOYEE' | 'INTERN'): Promise<string> {
+    await ensureDb();
+    const db = getTursoClient();
+    const prefix = personType === 'EMPLOYEE' ? 'GR-EMP' : 'GR-INT';
+
+    // Fetch all existing person codes for this type to guarantee zero collisions
+    const existingRes = await db.execute({
+      sql: 'SELECT person_code FROM people WHERE person_code LIKE ?',
+      args: [`${prefix}-%`],
+    });
+    const existingCodes = new Set(existingRes.rows.map(r => String(r.person_code)));
+
+    // Generate random 4-digit code (1000 - 9999), retrying until unique
+    let candidate = '';
+    let attempts = 0;
+    while (attempts < 10000) {
+      const randNum = Math.floor(1000 + Math.random() * 9000); // 1000 to 9999
+      candidate = `${prefix}-${randNum}`;
+      if (!existingCodes.has(candidate)) {
+        return candidate;
+      }
+      attempts++;
+    }
+
+    // Fallback if 4-digit range becomes exhausted: use 5-digit random
+    return `${prefix}-${Math.floor(10000 + Math.random() * 90000)}`;
+  },
+
+  async generateUniqueCertificateNumber(issueDate: string): Promise<string> {
+    await ensureDb();
+    const db = getTursoClient();
+    const year = new Date(issueDate).getFullYear() || 2026;
+    const prefix = `GR/INT/${year}`;
+
+    // Fetch all existing certificate numbers to guarantee zero collisions
+    const existingRes = await db.execute({
+      sql: 'SELECT certificate_number FROM certificates WHERE certificate_number LIKE ?',
+      args: [`${prefix}/%`],
+    });
+    const existingNumbers = new Set(existingRes.rows.map(r => String(r.certificate_number)));
+
+    // Generate random 4-digit code (1000 - 9999), retrying until unique
+    let candidate = '';
+    let attempts = 0;
+    while (attempts < 10000) {
+      const randNum = Math.floor(1000 + Math.random() * 9000); // 1000 to 9999
+      candidate = `${prefix}/${randNum}`;
+      if (!existingNumbers.has(candidate)) {
+        return candidate;
+      }
+      attempts++;
+    }
+
+    // Fallback if 4-digit range becomes exhausted: use 5-digit random
+    return `${prefix}/${Math.floor(10000 + Math.random() * 90000)}`;
+  },
+
   async getNextSequence(name: 'employee' | 'intern' | 'certificate'): Promise<number> {
     await ensureDb();
     const db = getTursoClient();
@@ -421,14 +478,7 @@ export const DataService = {
     await ensureDb();
     const db = getTursoClient();
 
-    let personCode: string;
-    if (data.person_type === 'EMPLOYEE') {
-      const seq = await this.getNextSequence('employee');
-      personCode = `GR-EMP-${String(seq).padStart(4, '0')}`;
-    } else {
-      const seq = await this.getNextSequence('intern');
-      personCode = `GR-INT-${String(seq).padStart(4, '0')}`;
-    }
+    const personCode = await this.generateUniquePersonCode(data.person_type);
 
     const newPersonId = `p-${Date.now()}`;
     const now = new Date().toISOString();
@@ -845,9 +895,7 @@ export const DataService = {
     const person = await this.getPersonById(params.personId);
     if (!person) throw new Error('Person not found');
 
-    const year = new Date(params.issueDate).getFullYear() || 2026;
-    const seq = await this.getNextSequence('certificate');
-    const certificateNumber = `GR/INT/${year}/${String(seq).padStart(4, '0')}`;
+    const certificateNumber = await this.generateUniqueCertificateNumber(params.issueDate);
 
     const rawToken = generateVerificationToken('crt_v_');
     const tokenHash = hashToken(rawToken);
@@ -936,6 +984,40 @@ export const DataService = {
 
     const updated = await this.getCertificateById(certificateId);
     return updated!;
+  },
+
+  async deleteCertificate(certificateId: string, actor: { id?: string; name: string }): Promise<{ success: boolean; certificateNumber: string }> {
+    await ensureDb();
+    const db = getTursoClient();
+
+    const certRes = await db.execute({
+      sql: 'SELECT * FROM certificates WHERE id = ?',
+      args: [certificateId],
+    });
+    if (certRes.rows.length === 0) throw new Error('Certificate not found');
+    const cert = certRes.rows[0];
+    const certNumber = String(cert.certificate_number);
+
+    // Delete verification token if exists
+    if (cert.verification_token_id) {
+      await db.execute({
+        sql: 'DELETE FROM verification_tokens WHERE id = ?',
+        args: [String(cert.verification_token_id)],
+      });
+    }
+
+    // Delete the certificate record
+    await db.execute({
+      sql: 'DELETE FROM certificates WHERE id = ?',
+      args: [certificateId],
+    });
+
+    await this.logActivity(actor, 'CERTIFICATE_DELETED' as any, 'CERTIFICATE', certificateId, {
+      certificate_number: certNumber,
+      recipient: String(cert.recipient_name_snapshot),
+    });
+
+    return { success: true, certificateNumber: certNumber };
   },
 
   // === PUBLIC VERIFICATION ===

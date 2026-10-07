@@ -8,7 +8,7 @@ import { CertificateDocument } from '@/components/documents/CertificateDocument'
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { formatDate } from '@/lib/utils';
-import { ArrowLeft, Ban, ExternalLink, User } from 'lucide-react';
+import { ArrowLeft, Ban, ExternalLink, Trash2, User } from 'lucide-react';
 
 interface CertificateDetailPageClientProps {
   certificate: Certificate;
@@ -24,6 +24,7 @@ export function CertificateDetailPageClient({
   const router = useRouter();
   const [showRevokeDialog, setShowRevokeDialog] = useState(false);
   const [revokeReason, setRevokeReason] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleRevoke = async () => {
@@ -43,6 +44,28 @@ export function CertificateDetailPageClient({
         router.refresh();
       } else {
         alert(data.error || 'Failed to revoke certificate');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/certificates/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          certificate_id: certificate.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowDeleteDialog(false);
+        router.push('/certificates');
+      } else {
+        alert(data.error || 'Failed to delete certificate');
       }
     } finally {
       setLoading(false);
@@ -88,10 +111,20 @@ export function CertificateDetailPageClient({
           {canRevoke && certificate.status === 'ISSUED' && (
             <button
               onClick={() => setShowRevokeDialog(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition"
             >
               <Ban className="w-3.5 h-3.5" />
-              Revoke Certificate
+              Revoke
+            </button>
+          )}
+
+          {canRevoke && (
+            <button
+              onClick={() => setShowDeleteDialog(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete Certificate
             </button>
           )}
         </div>
@@ -141,6 +174,18 @@ export function CertificateDetailPageClient({
           />
         </div>
       </ConfirmDialog>
+
+      {/* Delete Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        title="Delete Certificate Permanently?"
+        description={`Are you sure you want to completely delete certificate ${certificate.certificate_number}? This will remove it from the system entirely so it no longer appears in the list or scans.`}
+        confirmLabel="Yes, Delete Permanently"
+        variant="danger"
+        isLoading={loading}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteDialog(false)}
+      />
     </div>
   );
 }
