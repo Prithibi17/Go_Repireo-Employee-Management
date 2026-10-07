@@ -6,23 +6,24 @@ import QRCode from 'qrcode';
 interface QRCodeImageProps {
   url: string;
   size?: number;
+  margin?: number;
   className?: string;
 }
 
-export function QRCodeImage({ url, size = 160, className = '' }: QRCodeImageProps) {
+export function QRCodeImage({ url, size = 160, margin = 1, className = '' }: QRCodeImageProps) {
   const [dataUrl, setDataUrl] = useState<string>('');
 
   useEffect(() => {
     QRCode.toDataURL(url, {
       width: size,
-      margin: 1,
+      margin: margin,
       color: {
         dark: '#0f172a', // slate-900
         light: '#ffffff',
       },
       errorCorrectionLevel: 'M',
     }).then(setDataUrl).catch(console.error);
-  }, [url, size]);
+  }, [url, size, margin]);
 
   if (!dataUrl) {
     return (

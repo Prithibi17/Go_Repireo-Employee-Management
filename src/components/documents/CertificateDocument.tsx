@@ -121,21 +121,23 @@ export function CertificateDocument({
           </div>
 
           {/* Dynamic Verification QR Code inside the square border */}
-          {/* 1152x768 coordinates: left=769px, top=600px, size=104px -> scaled by 960/1152 (0.8333): left=641px, top=500px, size=86px */}
+          {/* 1152x768 box: x: 767 to 877 (w: 110), y: 598 to 708 (h: 110). Center: x: 822, y: 653 */}
+          {/* Scaled to 960x640 preview: box x: 639.2 to 730.8 (w: 91.6), box y: 498.3 to 590 (h: 91.7). Center: x: 685, y: 544 */}
           <div
             style={{ 
               position: 'absolute',
-              left: '641px', 
-              top: '500px', 
-              width: '87px', 
-              height: '87px' 
+              left: '645px', 
+              top: '504px', 
+              width: '80px', 
+              height: '80px' 
             }}
-            className="z-20 flex items-center justify-center p-0.5 bg-white rounded-md shadow-2xs group"
+            className="z-20 flex items-center justify-center bg-white rounded-xs group"
           >
             <QRCodeImage 
               url={verifyUrl} 
-              size={83} 
-              className="w-full h-full object-contain rounded-xs"
+              size={78} 
+              margin={0}
+              className="w-full h-full object-contain"
             />
           </div>
 
@@ -144,7 +146,7 @@ export function CertificateDocument({
             style={{ 
               position: 'absolute',
               left: '617px', 
-              top: '592px', 
+              top: '594px', 
               width: '135px'
             }}
             className="z-20 text-center"

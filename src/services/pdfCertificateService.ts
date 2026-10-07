@@ -164,31 +164,36 @@ export async function generateOfficialCertificatePdf(
     color: boldColor,
   });
 
-  // 5. Generate QR Code image PNG buffer
+  // 5. Generate QR Code image PNG buffer with margin 0 for perfect centering
   const verifyUrl = `${appUrl}/verify/certificate/${certificate.public_verification_code}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
     width: 300,
-    margin: 1,
+    margin: 0,
     color: { dark: '#000000', light: '#ffffff' },
   });
   const qrImageBytes = Buffer.from(qrDataUrl.split(',')[1], 'base64');
   const qrImage = await pdfDoc.embedPng(qrImageBytes);
 
   // Clear inner box cleanly before drawing QR code
+  // The square border in the vector PDF is at x: 767 to 877 (w: 110), y: 60 to 170 (h: 110)
   page.drawRectangle({
-    x: 771,
-    y: 64,
-    width: 102,
-    height: 102,
+    x: 770,
+    y: 63,
+    width: 104,
+    height: 104,
     color: rgb(1, 1, 1),
   });
 
-  // The square border in the vector PDF is at x: 767 to 877, y: 60 to 170
+  // Perfectly centered inside the 110x110 border box with 7-8px equal margins on all sides
+  const qrSize = 95;
+  const qrX = 774.5;
+  const qrY = 74.5;
+
   page.drawImage(qrImage, {
-    x: 772,
-    y: 65,
-    width: 100,
-    height: 100,
+    x: qrX,
+    y: qrY,
+    width: qrSize,
+    height: qrSize,
   });
 
   // 6. Draw certificate number badge under MSME
