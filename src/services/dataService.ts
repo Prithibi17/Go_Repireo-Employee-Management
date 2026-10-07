@@ -188,6 +188,33 @@ export const DataService = {
   async getNextSequence(name: 'employee' | 'intern' | 'certificate'): Promise<number> {
     await ensureDb();
     const db = getTursoClient();
+
+    // Verify against existing maximums in tables to ensure no number is ever reused or duplicated
+    if (name === 'certificate') {
+      const existingRes = await db.execute('SELECT certificate_number FROM certificates');
+      let maxNum = 0;
+      for (const row of existingRes.rows) {
+        const match = String(row.certificate_number).match(/\/(\d+)$/);
+        if (match) {
+          const val = parseInt(match[1], 10);
+          if (val > maxNum) maxNum = val;
+        }
+      }
+      const seqRes = await db.execute({
+        sql: 'SELECT current_value FROM app_sequences WHERE name = ?',
+        args: [name],
+      });
+      const currentTracker = Number(seqRes.rows[0]?.current_value || 0);
+      const safeBaseline = Math.max(currentTracker, maxNum);
+
+      const nextVal = safeBaseline + 1;
+      await db.execute({
+        sql: 'UPDATE app_sequences SET current_value = ? WHERE name = ?',
+        args: [nextVal, name],
+      });
+      return nextVal;
+    }
+
     await db.execute({
       sql: 'UPDATE app_sequences SET current_value = current_value + 1 WHERE name = ?',
       args: [name],
