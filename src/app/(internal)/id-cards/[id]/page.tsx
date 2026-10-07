@@ -62,7 +62,7 @@ export default async function IdCardDetailPage({ params }: IdCardDetailPageProps
           card={card}
           person={card.person}
           company={company}
-          appUrl={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}
+          appUrl={process.env.NEXT_PUBLIC_APP_URL || 'https://go-repireo-employee-management.vercel.app'}
         />
       </div>
     </div>
