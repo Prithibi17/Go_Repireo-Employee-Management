@@ -65,7 +65,87 @@ export function IDCardDocument({
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!cardContainerRef.current) {
+      window.print();
+      return;
+    }
+
+    const printContent = cardContainerRef.current.innerHTML;
+    const printWindow = window.open('', '_blank', 'width=900,height=650');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print ID Card - ${person.full_name} (${person.person_code})</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            @page {
+              size: landscape;
+              margin: 10mm;
+            }
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              box-sizing: border-box;
+            }
+            body {
+              background: #ffffff !important;
+              color: #0f172a !important;
+              font-family: 'Inter', system-ui, -apple-system, sans-serif;
+              margin: 0;
+              padding: 20px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+            }
+            .print-wrapper {
+              display: flex;
+              flex-direction: row;
+              align-items: center;
+              justify-content: center;
+              gap: 32px;
+              margin: auto;
+            }
+            .id-card-box {
+              width: 280px !important;
+              height: 445px !important;
+              box-shadow: none !important;
+              border: 1px solid #cbd5e1 !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              background-color: #ffffff !important;
+              border-radius: 16px !important;
+              overflow: hidden !important;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="print-wrapper">
+            ${printContent}
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.focus();
+                window.print();
+                window.close();
+              }, 400);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   return (
@@ -100,12 +180,12 @@ export function IDCardDocument({
       {/* Side-by-side ID Card Front & Back */}
       <div 
         ref={cardContainerRef}
-        className="flex flex-wrap items-center justify-center gap-10 p-8 bg-slate-100/60 rounded-3xl border border-slate-200 shadow-inner print:bg-white print:border-none print:shadow-none print:p-0"
+        className="id-card-print-area flex flex-wrap items-center justify-center gap-10 p-8 bg-slate-100/60 rounded-3xl border border-slate-200 shadow-inner print:bg-white print:border-none print:shadow-none print:p-0"
       >
         {/* ================= ID CARD FRONT ================= */}
         <div 
           style={{ width: '280px', height: '445px' }}
-          className="relative bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden flex flex-col justify-between text-slate-800 print:shadow-none print:border print:border-slate-300 select-none"
+          className="id-card-box relative bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden flex flex-col justify-between text-slate-800 print:shadow-none print:border print:border-slate-300 select-none"
         >
           {/* Top Geometric Accent Bars: Blue on left, Orange on right */}
           <div className="absolute top-0 left-0 right-0 h-[6px] flex">
@@ -211,7 +291,7 @@ export function IDCardDocument({
         {/* ================= ID CARD BACK ================= */}
         <div 
           style={{ width: '280px', height: '445px' }}
-          className="relative bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden flex flex-col justify-between text-slate-800 print:shadow-none print:border print:border-slate-300 select-none p-5"
+          className="id-card-box relative bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden flex flex-col justify-between text-slate-800 print:shadow-none print:border print:border-slate-300 select-none p-5"
         >
           {/* Header with Mascot & Title */}
           <div className="flex flex-col items-center text-center pt-1 border-b border-slate-100 pb-3">
