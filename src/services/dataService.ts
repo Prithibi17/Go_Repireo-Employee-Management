@@ -1,12 +1,12 @@
-import { getTursoClient } from '@/lib/turso';
-import { initTursoSchema } from '@/lib/tursoSchema';
-import { generateVerificationToken, hashToken, generateCryptoAlphanumeric } from '@/lib/tokens';
+import { getTursoClient } from '../lib/turso';
+import { initTursoSchema } from '../lib/tursoSchema';
+import { generateVerificationToken, hashToken, generateCryptoAlphanumeric } from '../lib/tokens';
 import { 
   Person, Internship, IdCard, Certificate, ActivityLog, 
   CompanySettings, Department, Profile, PublicIdVerificationResponse, 
   PublicCertificateVerificationResponse
-} from '@/types';
-import { PersonFormData } from '@/validators';
+} from '../types';
+import { PersonFormData } from '../validators';
 
 let initialized = false;
 async function ensureDb() {

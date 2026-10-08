@@ -1,7 +1,7 @@
 import { Context } from 'hono';
 import { getCookie } from 'hono/cookie';
-import { UserRole } from '@/types';
-import { getTursoClient } from '@/lib/turso';
+import { UserRole } from '../types';
+import { getTursoClient } from '../lib/turso';
 
 export interface CurrentUser {
   id: string;

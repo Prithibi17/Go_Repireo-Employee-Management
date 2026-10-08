@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import { setCookie, deleteCookie } from 'hono/cookie';
-import { DataService } from '@/services/dataService';
-import { personSchema } from '@/validators';
+import { DataService } from '../services/dataService';
+import { personSchema } from '../validators';
 import { getCurrentUser, canManagePeople, canIssueCertificates, canManageSettings, canManageUsers } from './authHelper';
-import { generateOfficialCertificatePdf } from '@/services/pdfCertificateService';
+import { generateOfficialCertificatePdf } from '../services/pdfCertificateService';
 
 const app = new Hono();
 

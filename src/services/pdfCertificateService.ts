@@ -2,8 +2,8 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import QRCode from 'qrcode';
 import fs from 'fs';
 import path from 'path';
-import { Certificate } from '@/types';
-import { formatDate } from '@/lib/utils';
+import { Certificate } from '../types';
+import { formatDate } from '../lib/utils';
 
 export async function generateOfficialCertificatePdf(
   certificate: Certificate,
