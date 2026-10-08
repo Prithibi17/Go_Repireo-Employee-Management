@@ -179,6 +179,17 @@ export async function initTursoSchema() {
       current_value INTEGER NOT NULL DEFAULT 0
     );`,
 
+    `CREATE TABLE IF NOT EXISTS api_keys (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      key_prefix TEXT NOT NULL,
+      key_token TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ACTIVE',
+      created_at TEXT NOT NULL,
+      created_by TEXT,
+      last_used_at TEXT
+    );`,
+
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_people_person_code ON people (person_code);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_id_cards_card_number ON id_cards (card_number);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_certificates_cert_number ON certificates (certificate_number);`

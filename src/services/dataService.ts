@@ -5,7 +5,8 @@ import QRCode from 'qrcode';
 import { 
   Person, Internship, IdCard, Certificate, ActivityLog, 
   CompanySettings, Department, Profile, PublicIdVerificationResponse, 
-  PublicCertificateVerificationResponse, PublicCardApiResponse
+  PublicCertificateVerificationResponse, PublicCardApiResponse,
+  ApiKey, PromoteInternData
 } from '../types';
 import { PersonFormData } from '../validators';
 
@@ -717,26 +718,37 @@ export const DataService = {
 
   // === INTERNSHIP LIFECYCLE ===
   async completeInternship(params: {
-    internshipId: string;
-    finalEndDate: string;
+    internshipId?: string;
+    internship_id?: string;
+    finalEndDate?: string;
+    final_end_date?: string;
     completionNotes?: string | null;
+    completion_notes?: string | null;
     deactivateIdCard?: boolean;
+    deactivate_id_card?: boolean;
     actor: { id?: string; name: string };
   }): Promise<Internship> {
     await ensureDb();
     const db = getTursoClient();
     const now = new Date().toISOString();
 
+    const internshipId = params.internshipId || params.internship_id;
+    if (!internshipId) throw new Error('Internship ID required');
+
+    const finalEndDate = params.finalEndDate || params.final_end_date || new Date().toISOString().split('T')[0];
+    const completionNotes = params.completionNotes || params.completion_notes || null;
+    const deactivateIdCard = Boolean(params.deactivateIdCard ?? params.deactivate_id_card);
+
     const intRes = await db.execute({
       sql: 'SELECT * FROM internships WHERE id = ?',
-      args: [params.internshipId],
+      args: [internshipId],
     });
     if (intRes.rows.length === 0) throw new Error('Internship not found');
     const internship = intRes.rows[0];
 
     await db.execute({
       sql: "UPDATE internships SET status = 'COMPLETED', final_end_date = ?, completed_at = ?, completed_by = ?, completion_notes = ?, updated_at = ? WHERE id = ?",
-      args: [params.finalEndDate, now, params.actor.id || null, params.completionNotes || null, now, params.internshipId],
+      args: [finalEndDate, now, params.actor.id || null, completionNotes, now, internshipId],
     });
 
     await db.execute({
@@ -744,7 +756,7 @@ export const DataService = {
       args: [now, String(internship.person_id)],
     });
 
-    if (params.deactivateIdCard) {
+    if (deactivateIdCard) {
       const activeCard = await db.execute({
         sql: "SELECT id FROM id_cards WHERE person_id = ? AND status = 'ACTIVE' LIMIT 1",
         args: [String(internship.person_id)],
@@ -754,30 +766,128 @@ export const DataService = {
       }
     }
 
-    await this.logActivity(params.actor, 'INTERNSHIP_COMPLETED', 'INTERNSHIP', params.internshipId, {
+    await this.logActivity(params.actor, 'INTERNSHIP_COMPLETED', 'INTERNSHIP', internshipId, {
       person_id: String(internship.person_id),
-      final_end_date: params.finalEndDate,
+      final_end_date: finalEndDate,
     });
 
     const updated = await db.execute({
       sql: 'SELECT * FROM internships WHERE id = ?',
-      args: [params.internshipId],
+      args: [internshipId],
     });
     const row = updated.rows[0];
 
     return {
       id: String(row.id),
       person_id: String(row.person_id),
+      college_name: row.college_name ? String(row.college_name) : null,
+      course: row.course ? String(row.course) : null,
+      specialization: row.specialization ? String(row.specialization) : null,
       domain: String(row.domain),
       internship_title: String(row.internship_title),
+      project_name: row.project_name ? String(row.project_name) : null,
       start_date: String(row.start_date),
       end_date: String(row.end_date),
       final_end_date: row.final_end_date ? String(row.final_end_date) : null,
       mode: row.mode as any,
+      stipend: row.stipend ? String(row.stipend) : null,
       status: row.status as any,
       created_at: String(row.created_at),
       updated_at: String(row.updated_at),
     };
+  },
+
+  async promoteInternToEmployee(
+    personId: string,
+    data: PromoteInternData,
+    actor: { id?: string; name: string }
+  ): Promise<{ person: Person; newCard?: IdCard | null }> {
+    await ensureDb();
+    const db = getTursoClient();
+    const now = new Date().toISOString();
+
+    const person = await this.getPersonById(personId);
+    if (!person) throw new Error('Person not found');
+    if (person.person_type !== 'INTERN') {
+      throw new Error('Only interns can be promoted to employee');
+    }
+
+    // Determine new person_code: transform GRI-XXXXXXX to GRE-XXXXXXX preserving the exact suffix
+    const currentCode = person.person_code;
+    let newCode = currentCode;
+    if (currentCode.startsWith('GRI-')) {
+      newCode = 'GRE-' + currentCode.slice(4);
+    } else if (!currentCode.startsWith('GRE-')) {
+      newCode = 'GRE-' + currentCode;
+    }
+
+    // Verify uniqueness of newCode
+    const checkRes = await db.execute({
+      sql: 'SELECT id FROM people WHERE person_code = ? AND id != ? LIMIT 1',
+      args: [newCode, personId],
+    });
+    if (checkRes.rows.length > 0) {
+      throw new Error(`Employee ID ${newCode} already exists in the system`);
+    }
+
+    const newDesignation = data.designation?.trim() || person.designation;
+    const newDepartmentId = data.department_id || person.department_id || null;
+    const newWorkLocation = data.work_location?.trim() || person.work_location || 'Kolkata, WB';
+    const newEmpType = data.employment_type || 'Full-time';
+
+    // Update people record
+    await db.execute({
+      sql: `UPDATE people 
+            SET person_type = 'EMPLOYEE',
+                person_code = ?,
+                status = 'ACTIVE',
+                designation = ?,
+                department_id = ?,
+                work_location = ?,
+                employment_type = ?,
+                updated_at = ?,
+                updated_by = ?
+            WHERE id = ?`,
+      args: [
+        newCode,
+        newDesignation,
+        newDepartmentId,
+        newWorkLocation,
+        newEmpType,
+        now,
+        actor.id || null,
+        personId,
+      ],
+    });
+
+    let newCard: IdCard | null = null;
+    const shouldReissue = data.reissue_id_card !== false;
+
+    if (shouldReissue) {
+      // Revoke any active card for this person
+      const activeCards = await db.execute({
+        sql: "SELECT id FROM id_cards WHERE person_id = ? AND status = 'ACTIVE'",
+        args: [personId],
+      });
+      for (const cardRow of activeCards.rows) {
+        await this.revokeIdCard(String(cardRow.id), 'Promoted to Employee (ID upgraded to GRE)', actor);
+      }
+
+      // Generate new active ID card with GRE
+      newCard = await this.generateIdCard(personId, actor);
+    }
+
+    await this.logActivity(actor, 'PROMOTED_TO_EMPLOYEE', 'PERSON', personId, {
+      from_code: currentCode,
+      to_code: newCode,
+      from_type: 'INTERN',
+      to_type: 'EMPLOYEE',
+      designation: newDesignation,
+      reissued_card: shouldReissue,
+    });
+
+    const updatedPerson = await this.getPersonById(personId);
+    return { person: updatedPerson!, newCard };
   },
 
   // === ID CARDS ===
@@ -1238,6 +1348,8 @@ export const DataService = {
             JOIN people p ON c.person_id = p.id
             LEFT JOIN departments d ON p.department_id = d.id
             WHERE UPPER(p.person_code) = UPPER(?)
+               OR (p.person_code LIKE 'GRE-%' AND UPPER(REPLACE(p.person_code, 'GRE-', 'GRI-')) = UPPER(?))
+               OR (p.person_code LIKE 'GRI-%' AND UPPER(REPLACE(p.person_code, 'GRI-', 'GRE-')) = UPPER(?))
                OR UPPER(c.card_number) = UPPER(?)
                OR c.public_verification_code = ?
                OR c.id = ?
@@ -1246,7 +1358,7 @@ export const DataService = {
                OR LOWER(p.personal_email) = LOWER(?)
             ORDER BY (CASE WHEN c.status = 'ACTIVE' THEN 0 ELSE 1 END), c.issued_at DESC
             LIMIT 1`,
-      args: [cleanId, cleanId, cleanId, cleanId, cleanId, cleanId, cleanId],
+      args: [cleanId, cleanId, cleanId, cleanId, cleanId, cleanId, cleanId, cleanId, cleanId],
     });
 
     if (cardRes.rows.length > 0) {
@@ -1323,10 +1435,12 @@ export const DataService = {
             FROM people p
             LEFT JOIN departments d ON p.department_id = d.id
             WHERE UPPER(p.person_code) = UPPER(?)
+               OR (p.person_code LIKE 'GRE-%' AND UPPER(REPLACE(p.person_code, 'GRE-', 'GRI-')) = UPPER(?))
+               OR (p.person_code LIKE 'GRI-%' AND UPPER(REPLACE(p.person_code, 'GRI-', 'GRE-')) = UPPER(?))
                OR LOWER(p.company_email) = LOWER(?)
                OR p.id = ?
             LIMIT 1`,
-      args: [cleanId, cleanId, cleanId],
+      args: [cleanId, cleanId, cleanId, cleanId, cleanId],
     });
 
     if (personRes.rows.length > 0) {
@@ -1393,6 +1507,68 @@ export const DataService = {
       },
       errorCorrectionLevel: 'M',
     });
+  },
+
+  // === API KEYS MANAGEMENT ===
+  async getApiKeys(): Promise<ApiKey[]> {
+    await ensureDb();
+    const db = getTursoClient();
+    const res = await db.execute('SELECT * FROM api_keys ORDER BY created_at DESC');
+    return res.rows.map((row) => ({
+      id: String(row.id),
+      name: String(row.name),
+      key_prefix: String(row.key_prefix),
+      status: row.status as any,
+      created_at: String(row.created_at),
+      created_by: row.created_by ? String(row.created_by) : null,
+      last_used_at: row.last_used_at ? String(row.last_used_at) : null,
+    }));
+  },
+
+  async createApiKey(name: string, actor: { id?: string; name: string }): Promise<ApiKey & { key_token: string }> {
+    await ensureDb();
+    const db = getTursoClient();
+    const id = `apk-${Date.now()}`;
+    const rawSecret = generateCryptoAlphanumeric(32);
+    const fullToken = `grp_live_${rawSecret}`;
+    const keyPrefix = `grp_live_${rawSecret.slice(0, 6)}...`;
+    const now = new Date().toISOString();
+
+    await db.execute({
+      sql: 'INSERT INTO api_keys (id, name, key_prefix, key_token, status, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      args: [id, name.trim(), keyPrefix, fullToken, 'ACTIVE', now, actor.id || actor.name],
+    });
+
+    await this.logActivity(actor, 'API_KEY_CREATED', 'API_KEY', id, { name: name.trim(), key_prefix: keyPrefix });
+
+    return {
+      id,
+      name: name.trim(),
+      key_prefix: keyPrefix,
+      key_token: fullToken,
+      status: 'ACTIVE',
+      created_at: now,
+      created_by: actor.name,
+    };
+  },
+
+  async deleteApiKey(id: string, actor: { id?: string; name: string }): Promise<boolean> {
+    await ensureDb();
+    const db = getTursoClient();
+    const keyRes = await db.execute({
+      sql: 'SELECT * FROM api_keys WHERE id = ?',
+      args: [id],
+    });
+    if (keyRes.rows.length === 0) return false;
+
+    const row = keyRes.rows[0];
+    await db.execute({
+      sql: 'DELETE FROM api_keys WHERE id = ?',
+      args: [id],
+    });
+
+    await this.logActivity(actor, 'API_KEY_DELETED', 'API_KEY', id, { name: String(row.name), key_prefix: String(row.key_prefix) });
+    return true;
   },
 
   async verifyCertificateByToken(rawToken: string): Promise<PublicCertificateVerificationResponse> {

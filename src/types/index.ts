@@ -285,3 +285,23 @@ export interface PublicCardApiResponse {
     };
   };
 }
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  key_token?: string;
+  status: 'ACTIVE' | 'REVOKED';
+  created_at: string;
+  created_by?: string | null;
+  last_used_at?: string | null;
+}
+
+export interface PromoteInternData {
+  designation?: string;
+  department_id?: string;
+  work_location?: string;
+  employment_type?: EmploymentType;
+  reissue_id_card?: boolean;
+}
+

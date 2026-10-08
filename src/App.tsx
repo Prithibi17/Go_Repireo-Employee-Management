@@ -17,6 +17,7 @@ import { UsersAccessPage } from '@/pages/UsersAccessPage';
 import { VerifyIdPage } from '@/pages/VerifyIdPage';
 import { VerifyCertificatePage } from '@/pages/VerifyCertificatePage';
 import { EmbedCardPage } from '@/pages/EmbedCardPage';
+import { ApiDocsPage } from '@/pages/ApiDocsPage';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/id-cards/:id" element={<IdCardDetailPage />} />
           <Route path="/certificates" element={<CertificatesPage />} />
           <Route path="/certificates/:id" element={<CertificateDetailPage />} />
+          <Route path="/api-docs" element={<ApiDocsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/users" element={<UsersAccessPage />} />
         </Route>

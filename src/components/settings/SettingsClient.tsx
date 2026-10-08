@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { CompanySettings, Department } from '@/types';
-import { Building2, Save, Upload, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { CompanySettings, Department, ApiKey } from '@/types';
+import { Building2, Save, Upload, Plus, Key, Trash2, Copy, Check, ExternalLink, Code2 } from 'lucide-react';
 
 interface SettingsClientProps {
   settings: CompanySettings;
@@ -28,6 +29,74 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
   const [newDeptName, setNewDeptName] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // API Keys Management State
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [loadingKeys, setLoadingKeys] = useState(false);
+  const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<(ApiKey & { key_token: string }) | null>(null);
+  const [copiedKey, setCopiedKey] = useState(false);
+
+  const loadApiKeys = () => {
+    setLoadingKeys(true);
+    fetch('/api/api-keys')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.apiKeys) {
+          setApiKeys(data.apiKeys);
+        }
+      })
+      .catch((err) => console.error('Failed to load API keys', err))
+      .finally(() => setLoadingKeys(false));
+  };
+
+  useEffect(() => {
+    loadApiKeys();
+  }, []);
+
+  const handleCreateApiKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newKeyName.trim()) return;
+    setCreatingKey(true);
+    try {
+      const res = await fetch('/api/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newKeyName.trim() }),
+      });
+      const data = await res.json();
+      if (data.success && data.apiKey) {
+        setNewlyCreatedKey(data.apiKey);
+        setNewKeyName('');
+        loadApiKeys();
+      } else {
+        alert(data.error || 'Failed to create API key');
+      }
+    } finally {
+      setCreatingKey(false);
+    }
+  };
+
+  const handleDeleteApiKey = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to permanently delete API key "${name}"? Any external services using it will lose connection.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/api-keys/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadApiKeys();
+      } else {
+        alert(data.error || 'Failed to delete API key');
+      }
+    } catch {
+      alert('Network error while deleting API key');
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -285,6 +354,182 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
           ))}
         </div>
       </div>
+
+      {/* 5. API Keys & Integrations */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2">
+              <Key className="w-4 h-4 text-indigo-600" />
+              <h2 className="text-base font-bold text-slate-900">5. API Keys & External Integrations</h2>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Create and manage API keys for connecting external websites, portals, or mobile apps to Go_Repireo.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/api-docs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition"
+            >
+              <Code2 className="w-3.5 h-3.5" />
+              API Docs Hub
+            </Link>
+            {canEdit && (
+              <button
+                onClick={() => {
+                  setNewlyCreatedKey(null);
+                  setShowCreateKeyModal(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-xs transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Create API Key
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Existing API Keys Table */}
+        {loadingKeys ? (
+          <div className="py-6 text-center text-xs text-slate-400">Loading API keys...</div>
+        ) : apiKeys.length === 0 ? (
+          <div className="py-8 text-center border border-dashed border-slate-200 rounded-lg">
+            <Key className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+            <p className="text-xs font-medium text-slate-600">No active API keys created yet</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Public verification endpoints are open, but you can create dedicated keys to track and authenticate client applications.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden">
+            {apiKeys.map((k) => (
+              <div key={k.id} className="p-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-900 truncate">{k.name}</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Active
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-500 font-mono">
+                    <span>Key Prefix: {k.key_prefix}</span>
+                    <span>•</span>
+                    <span className="font-sans">Created {new Date(k.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                {canEdit && (
+                  <button
+                    onClick={() => handleDeleteApiKey(k.id, k.name)}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition"
+                    title="Delete API Key"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal: Create API Key */}
+      {showCreateKeyModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900">
+                {newlyCreatedKey ? 'API Key Generated' : 'Create New API Key'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowCreateKeyModal(false);
+                  setNewlyCreatedKey(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {newlyCreatedKey ? (
+              <div className="space-y-4">
+                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                  <strong>⚠️ Copy your key now:</strong> For security, this full token will only be shown once.
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Generated API Token</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={newlyCreatedKey.key_token}
+                      className="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg text-slate-900 select-all"
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(newlyCreatedKey.key_token);
+                        setCopiedKey(true);
+                        setTimeout(() => setCopiedKey(false), 2000);
+                      }}
+                      className="px-3 py-2 bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shrink-0"
+                    >
+                      {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedKey ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => {
+                      setShowCreateKeyModal(false);
+                      setNewlyCreatedKey(null);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleCreateApiKey} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Application / Service Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Main Company Website / gorepireo.in"
+                    value={newKeyName}
+                    onChange={(e) => setNewKeyName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg text-slate-900"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Identify which service or client website will be using this key.
+                  </p>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateKeyModal(false)}
+                    className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creatingKey}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-xs"
+                  >
+                    {creatingKey ? 'Generating...' : 'Generate API Key'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

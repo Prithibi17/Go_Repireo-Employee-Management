@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutDashboard, Users, UserCheck, GraduationCap, 
   CreditCard, Award, ShieldCheck, Settings, LogOut,
-  ChevronRight, Building2
+  ChevronRight, Building2, Code2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -47,6 +47,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
       group: 'Administration',
       items: [
         { name: 'Users & Access', href: '/settings/users', icon: ShieldCheck },
+        { name: 'API & Endpoints', href: '/api-docs', icon: Code2 },
         { name: 'Settings', href: '/settings', icon: Settings },
       ],
     },

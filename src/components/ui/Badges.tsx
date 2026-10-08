@@ -12,9 +12,9 @@ export function PersonStatusBadge({ status }: { status: PersonStatus }) {
       );
     case 'COMPLETED':
       return (
-        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-sky-500/10 text-sky-700 border border-sky-500/20">
-          <span className="w-1.5 h-1.5 rounded-full bg-sky-600"></span>
-          Completed
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-500/10 text-emerald-800 border border-emerald-500/20">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+          Completed Internship
         </span>
       );
     case 'INACTIVE':

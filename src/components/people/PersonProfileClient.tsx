@@ -10,7 +10,8 @@ import { formatDate, formatDateTime } from '@/lib/utils';
 import { 
   CreditCard, Award, CheckCircle2, Archive, 
   RefreshCw, Ban, Plus, Building2, Calendar, MapPin, 
-  Mail, Phone, Clock, FileText, Activity, ShieldCheck, Trash2, Edit
+  Mail, Phone, Clock, FileText, Activity, ShieldCheck, Trash2, Edit,
+  TrendingUp, Sparkles, ArrowRight
 } from 'lucide-react';
 
 interface PersonProfileClientProps {
@@ -38,6 +39,19 @@ export function PersonProfileClient({
   const [loading, setLoading] = useState(false);
 
   // Dialog States
+  const [showPromoteDialog, setShowPromoteDialog] = useState(false);
+  const [promoteFormData, setPromoteFormData] = useState({
+    designation: person.designation || 'Software Engineer',
+    department_id: person.department_id || '',
+    work_location: person.work_location || 'Kolkata, WB',
+    employment_type: 'Full-time' as any,
+    reissue_id_card: true,
+  });
+
+  const projectedEmpCode = person.person_code.startsWith('GRI-')
+    ? 'GRE-' + person.person_code.slice(4)
+    : (person.person_code.startsWith('GRE-') ? person.person_code : 'GRE-' + person.person_code);
+
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [completionDate, setCompletionDate] = useState(
     activeInternship?.end_date || new Date().toISOString().split('T')[0]
@@ -130,6 +144,28 @@ export function PersonProfileClient({
       } else {
         alert(data.error || 'Failed to revoke ID card');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePromoteToEmployee = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/people/${person.id}/promote-to-employee`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(promoteFormData),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowPromoteDialog(false);
+        onRefresh?.();
+      } else {
+        alert(data.error || 'Failed to promote intern to employee');
+      }
+    } catch {
+      alert('Network error while promoting intern');
     } finally {
       setLoading(false);
     }
@@ -274,6 +310,18 @@ export function PersonProfileClient({
               </button>
             )}
 
+            {/* Promote Intern to Employee Action */}
+            {person.person_type === 'INTERN' && (
+              <button
+                onClick={() => setShowPromoteDialog(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition"
+                title="Promote Intern to Full-Time Employee"
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                Promote to Employee
+              </button>
+            )}
+
             {/* Edit Profile Action */}
             <Link
               to={`/people/${person.id}/edit`}
@@ -296,6 +344,43 @@ export function PersonProfileClient({
           </div>
         </div>
       </div>
+
+      {/* Completed Internship Promotion Banner */}
+      {person.person_type === 'INTERN' && person.status === 'COMPLETED' && (
+        <div className="bg-gradient-to-r from-emerald-50 via-teal-50/60 to-indigo-50 border border-emerald-200/90 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-10 h-10 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800 text-xl shrink-0">
+              🎓
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900">Internship Completed</h3>
+                <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  Ready for Full-Time
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                This candidate has completed their tenure. You can issue their certificate or promote them to full-time Employee with Staff ID <strong className="font-mono text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">{projectedEmpCode}</strong>.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowIssueCertDialog(true)}
+              className="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 rounded-lg shadow-xs transition"
+            >
+              Generate Certificate
+            </button>
+            <button
+              onClick={() => setShowPromoteDialog(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition"
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              Promote to Employee
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200">
@@ -752,6 +837,86 @@ export function PersonProfileClient({
           setCertToDelete(null);
         }}
       />
+
+      {/* 7. Promote Intern to Full-Time Employee Dialog */}
+      <ConfirmDialog
+        isOpen={showPromoteDialog}
+        title="Promote Intern to Full-Time Employee"
+        description="Transition this candidate from Intern to full-time Employee status. Their Staff ID code will seamlessly update from GRI to GRE with the same 7-character suffix, and a new official Employee ID Card will be generated."
+        confirmLabel="Confirm & Promote to Employee"
+        variant="primary"
+        isLoading={loading}
+        onConfirm={handlePromoteToEmployee}
+        onCancel={() => setShowPromoteDialog(false)}
+      >
+        <div className="space-y-4 pt-2 text-xs">
+          {/* ID Transition Visualization */}
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+            <div>
+              <p className="text-[11px] text-slate-500 font-semibold uppercase">Current Intern ID</p>
+              <p className="font-mono text-sm font-bold text-slate-700">{person.person_code}</p>
+            </div>
+            <div className="flex items-center text-indigo-600 font-bold gap-1 text-xs">
+              <span>Promoting</span>
+              <ArrowRight className="w-4 h-4" />
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] text-indigo-600 font-semibold uppercase">New Employee ID</p>
+              <p className="font-mono text-sm font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                {projectedEmpCode}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">New Designation / Title</label>
+              <input
+                type="text"
+                required
+                value={promoteFormData.designation}
+                onChange={(e) => setPromoteFormData({ ...promoteFormData, designation: e.target.value })}
+                placeholder="e.g. Associate Software Engineer"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Employment Type</label>
+              <select
+                value={promoteFormData.employment_type}
+                onChange={(e) => setPromoteFormData({ ...promoteFormData, employment_type: e.target.value as any })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
+              >
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Contract">Contract</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Work Location</label>
+            <input
+              type="text"
+              value={promoteFormData.work_location}
+              onChange={(e) => setPromoteFormData({ ...promoteFormData, work_location: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
+            />
+          </div>
+
+          <label className="flex items-center gap-2 pt-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={promoteFormData.reissue_id_card}
+              onChange={(e) => setPromoteFormData({ ...promoteFormData, reissue_id_card: e.target.checked })}
+              className="rounded text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-slate-700 font-medium">
+              Immediately issue new official Employee ID Card with <strong className="font-mono">{projectedEmpCode}</strong>
+            </span>
+          </label>
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }

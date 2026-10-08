@@ -170,6 +170,26 @@ app.post('/api/people/:id/archive', async (c) => {
   }
 });
 
+app.post('/api/people/:id/promote-to-employee', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized to promote interns' }, 403);
+    }
+
+    const body = await c.req.json().catch(() => ({}));
+    const result = await DataService.promoteInternToEmployee(id, body, {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: true, person: result.person, newCard: result.newCard });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to promote intern to employee' }, 400);
+  }
+});
+
 // === ID CARDS ===
 app.get('/api/id-cards', async (c) => {
   try {
@@ -460,6 +480,63 @@ app.put('/api/users/role', async (c) => {
     return c.json({ success: true, profile });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || 'Failed to update role' }, 400);
+  }
+});
+
+// === API KEYS MANAGEMENT ===
+app.get('/api/api-keys', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManageSettings(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+
+    const apiKeys = await DataService.getApiKeys();
+    return c.json({ success: true, apiKeys });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+app.post('/api/api-keys', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManageSettings(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized to create API keys' }, 403);
+    }
+
+    const { name } = await c.req.json();
+    if (!name || !name.trim()) {
+      return c.json({ success: false, error: 'API key name is required' }, 400);
+    }
+
+    const newKey = await DataService.createApiKey(name.trim(), {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: true, apiKey: newKey });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to create API key' }, 400);
+  }
+});
+
+app.delete('/api/api-keys/:id', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManageSettings(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized to delete API keys' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const deleted = await DataService.deleteApiKey(id, {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: deleted });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to delete API key' }, 400);
   }
 });
 
