@@ -26,11 +26,11 @@ export function PeopleFilterBar({ departments }: PeopleFilterBarProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3.5">
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200">
+      <div className="flex items-center gap-1 border-b border-zinc-200/80">
         {[
-          { id: 'ALL', label: 'All People', type: '' },
+          { id: 'ALL', label: 'All Personnel', type: '' },
           { id: 'EMPLOYEE', label: 'Employees', type: 'EMPLOYEE' },
           { id: 'INTERN', label: 'Interns', type: 'INTERN' },
           { id: 'ARCHIVED', label: 'Archived', type: '', status: 'ARCHIVED' },
@@ -51,10 +51,10 @@ export function PeopleFilterBar({ departments }: PeopleFilterBarProps) {
                 if (tab.status) params.set('status', tab.status);
                 setSearchParams(params);
               }}
-              className={`pb-3 px-3 text-sm font-semibold border-b-2 transition ${
+              className={`pb-2.5 px-3 text-[13px] font-medium border-b-2 transition-colors cursor-pointer ${
                 isActive
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                  ? 'border-zinc-950 text-zinc-950'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
               }`}
             >
               {tab.label}
@@ -64,25 +64,25 @@ export function PeopleFilterBar({ departments }: PeopleFilterBarProps) {
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
           <input
             type="text"
             defaultValue={currentSearch}
             onChange={(e) => updateParam('search', e.target.value)}
-            placeholder="Search by name, ID (e.g. GRI-5M8K2P7), email, role..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white text-slate-900"
+            placeholder="Search by name, ID (e.g. GRI-5M8K2P7), email, designation..."
+            className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-zinc-200/90 rounded-lg focus:outline-none focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950 bg-white text-zinc-900 placeholder:text-zinc-400 transition"
           />
         </div>
 
         {/* Department Filter */}
-        <div className="sm:w-48">
+        <div className="sm:w-44">
           <select
             value={currentDept}
             onChange={(e) => updateParam('dept', e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white text-slate-900"
+            className="w-full px-2.5 py-1.5 text-[13px] border border-zinc-200/90 rounded-lg focus:outline-none focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950 bg-white text-zinc-900 transition"
           >
             <option value="ALL">All Departments</option>
             {departments.map((d) => (
@@ -95,11 +95,11 @@ export function PeopleFilterBar({ departments }: PeopleFilterBarProps) {
 
         {/* Status Filter */}
         {currentStatus !== 'ARCHIVED' && (
-          <div className="sm:w-40">
+          <div className="sm:w-36">
             <select
               value={currentStatus}
               onChange={(e) => updateParam('status', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white text-slate-900"
+              className="w-full px-2.5 py-1.5 text-[13px] border border-zinc-200/90 rounded-lg focus:outline-none focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950 bg-white text-zinc-900 transition"
             >
               <option value="ALL">All Statuses</option>
               <option value="ACTIVE">Active</option>

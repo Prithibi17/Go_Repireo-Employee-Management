@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Plus, Eye, CreditCard, ChevronRight } from 'lucide-react';
+import { Plus, Eye } from 'lucide-react';
 import { PeopleFilterBar } from '@/components/people/PeopleFilterBar';
-import { PersonAvatar, PersonStatusBadge, PersonTypeBadge } from '@/components/ui/Badges';
+import { PersonAvatar, PersonStatusBadge, PersonTypeBadge, PersonCodeChip } from '@/components/ui/Badges';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatDate } from '@/lib/utils';
 import { Department, Person } from '@/types';
@@ -35,20 +35,20 @@ export function PeoplePage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-zinc-200/80">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            People
+          <h1 className="text-xl font-semibold tracking-tight text-zinc-900">
+            Personnel Directory
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Directory of employees, interns, active assignments and ID cards.
+          <p className="text-[13px] text-zinc-500 mt-0.5">
+            Internal directory of employees, interns, departments, and credentials.
           </p>
         </div>
         <Link
           to="/people/new"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-xs transition"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white text-[13px] font-medium rounded-lg shadow-xs transition-colors cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           Add Person
         </Link>
       </div>
@@ -58,67 +58,67 @@ export function PeoplePage() {
 
       {/* People Table */}
       {loading ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-400">
-          Loading people directory...
+        <div className="bg-white rounded-xl border border-zinc-200/80 p-8 text-center text-[13px] text-zinc-400">
+          Loading directory...
         </div>
       ) : people.length === 0 ? (
         <EmptyState
-          title="No people records found"
+          title="No records found"
           description="Try modifying your filters, search keyword, or add a new person to the directory."
           actionHref="/people/new"
           actionLabel="Add New Person"
         />
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="bg-white rounded-xl border border-zinc-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-600">
-              <thead className="bg-slate-50/75 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+            <table className="w-full text-left text-[13px] text-zinc-600">
+              <thead className="bg-zinc-50/70 text-zinc-400 text-[11px] font-medium uppercase tracking-wider border-b border-zinc-200/60">
                 <tr>
-                  <th className="py-3 px-4">Person</th>
-                  <th className="py-3 px-4">Staff ID</th>
-                  <th className="py-3 px-4">Type</th>
-                  <th className="py-3 px-4">Department / Designation</th>
-                  <th className="py-3 px-4">Joining Date</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-2.5 px-4">Person</th>
+                  <th className="py-2.5 px-4">Staff ID</th>
+                  <th className="py-2.5 px-4">Type</th>
+                  <th className="py-2.5 px-4">Department / Designation</th>
+                  <th className="py-2.5 px-4">Joining Date</th>
+                  <th className="py-2.5 px-4">Status</th>
+                  <th className="py-2.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-zinc-100">
                 {people.map((person) => (
-                  <tr key={person.id} className="hover:bg-slate-50/60 transition group">
-                    <td className="py-3.5 px-4 font-semibold text-slate-900">
-                      <Link href={`/people/${person.id}`} className="flex items-center gap-3 hover:text-blue-600">
+                  <tr key={person.id} className="hover:bg-zinc-50/60 transition-colors group">
+                    <td className="py-3 px-4 font-medium text-zinc-900">
+                      <Link to={`/people/${person.id}`} className="flex items-center gap-2.5 hover:text-zinc-600">
                         <PersonAvatar name={person.full_name} photoUrl={person.profile_photo_path} size="sm" />
                         <div>
-                          <p className="truncate group-hover:underline">{person.full_name}</p>
-                          <p className="text-[11px] text-slate-400 font-normal">{person.company_email || person.personal_email || 'No email'}</p>
+                          <p className="truncate font-medium">{person.full_name}</p>
+                          <p className="text-[11px] text-zinc-400 font-normal">{person.company_email || person.personal_email || 'No email'}</p>
                         </div>
                       </Link>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-xs font-bold text-slate-800">
-                      {person.person_code}
+                    <td className="py-3 px-4">
+                      <PersonCodeChip code={person.person_code} />
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3 px-4">
                       <PersonTypeBadge type={person.person_type} />
                     </td>
-                    <td className="py-3.5 px-4">
-                      <p className="font-medium text-slate-900">{person.designation}</p>
-                      <p className="text-xs text-slate-500">{person.department?.name || 'General'}</p>
+                    <td className="py-3 px-4">
+                      <p className="font-medium text-zinc-900">{person.designation}</p>
+                      <p className="text-[11px] text-zinc-400">{person.department?.name || 'General'}</p>
                     </td>
-                    <td className="py-3.5 px-4 text-xs text-slate-600">
+                    <td className="py-3 px-4 text-[12px] text-zinc-600">
                       {formatDate(person.joining_date)}
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3 px-4">
                       <PersonStatusBadge status={person.status} />
                     </td>
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <Link
                           to={`/people/${person.id}`}
-                          className="px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition inline-flex items-center gap-1"
+                          className="px-2.5 py-1 text-[12px] font-medium bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-md transition-colors inline-flex items-center gap-1"
                         >
-                          <Eye className="w-3.5 h-3.5" />
-                          Profile
+                          <Eye className="w-3.5 h-3.5 opacity-60" />
+                          View
                         </Link>
                       </div>
                     </td>

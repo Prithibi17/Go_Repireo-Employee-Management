@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { PersonAvatar, PersonTypeBadge } from '@/components/ui/Badges';
+import { PersonAvatar, PersonTypeBadge, PersonCodeChip } from '@/components/ui/Badges';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatDate } from '@/lib/utils';
 import { CreditCard, Eye } from 'lucide-react';
@@ -22,82 +22,82 @@ export function IdCardsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-zinc-200/80">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            ID Cards
+          <h1 className="text-xl font-semibold tracking-tight text-zinc-900">
+            Identity Cards
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Official Go_Repireo employee and intern identification credentials with digital QR verification.
+          <p className="text-[13px] text-zinc-500 mt-0.5">
+            Active employee and intern identification credentials with cryptographic QR verification.
           </p>
         </div>
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-400">
-          Loading ID cards...
+        <div className="bg-white rounded-xl border border-zinc-200/80 p-8 text-center text-[13px] text-zinc-400">
+          Loading credentials...
         </div>
       ) : cards.length === 0 ? (
         <EmptyState
           icon={CreditCard}
-          title="No ID cards generated yet"
-          description="Go to any employee or intern profile to issue their official identification card."
+          title="No credentials generated yet"
+          description="Navigate to any personnel profile to issue an official identity card."
           actionHref="/people"
-          actionLabel="View People Directory"
+          actionLabel="View Personnel Directory"
         />
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="bg-white rounded-xl border border-zinc-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-600">
-              <thead className="bg-slate-50/75 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+            <table className="w-full text-left text-[13px] text-zinc-600">
+              <thead className="bg-zinc-50/70 text-zinc-400 text-[11px] font-medium uppercase tracking-wider border-b border-zinc-200/60">
                 <tr>
-                  <th className="py-3 px-4">Card Holder</th>
-                  <th className="py-3 px-4">Person ID</th>
-                  <th className="py-3 px-4">Type</th>
-                  <th className="py-3 px-4">Role</th>
-                  <th className="py-3 px-4">Issued</th>
-                  <th className="py-3 px-4">Valid Until</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-2.5 px-4">Card Holder</th>
+                  <th className="py-2.5 px-4">Staff ID</th>
+                  <th className="py-2.5 px-4">Type</th>
+                  <th className="py-2.5 px-4">Role</th>
+                  <th className="py-2.5 px-4">Issued</th>
+                  <th className="py-2.5 px-4">Valid Until</th>
+                  <th className="py-2.5 px-4">Status</th>
+                  <th className="py-2.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-zinc-100">
                 {cards.map((card) => (
-                  <tr key={card.id} className="hover:bg-slate-50/60 transition group">
-                    <td className="py-3.5 px-4">
-                      <Link to={`/people/${card.person?.id}`} className="flex items-center gap-3 font-semibold text-slate-900 hover:text-blue-600">
+                  <tr key={card.id} className="hover:bg-zinc-50/60 transition-colors group">
+                    <td className="py-3 px-4">
+                      <Link to={`/people/${card.person?.id}`} className="flex items-center gap-2.5 font-medium text-zinc-900 hover:text-zinc-600">
                         <PersonAvatar name={card.person?.full_name || 'Holder'} photoUrl={card.person?.profile_photo_path} size="sm" />
                         <div>
-                          <p className="truncate group-hover:underline">{card.person?.full_name}</p>
-                          <p className="font-mono text-[10px] text-slate-400">{card.card_number}</p>
+                          <p className="truncate font-medium">{card.person?.full_name}</p>
+                          <p className="font-mono text-[10px] text-zinc-400">{card.card_number}</p>
                         </div>
                       </Link>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-xs font-bold text-slate-800">
-                      {card.person?.person_code}
+                    <td className="py-3 px-4">
+                      {card.person && <PersonCodeChip code={card.person.person_code} />}
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3 px-4">
                       {card.person && <PersonTypeBadge type={card.person.person_type} />}
                     </td>
-                    <td className="py-3.5 px-4 font-medium text-slate-800">
+                    <td className="py-3 px-4 font-medium text-zinc-800">
                       {card.person?.designation}
                     </td>
-                    <td className="py-3.5 px-4 text-xs text-slate-600">
+                    <td className="py-3 px-4 text-[12px] text-zinc-500">
                       {formatDate(card.valid_from)}
                     </td>
-                    <td className="py-3.5 px-4 text-xs text-slate-600">
+                    <td className="py-3 px-4 text-[12px] text-zinc-500">
                       {formatDate(card.valid_until)}
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3 px-4">
                       <StatusBadge status={card.status} />
                     </td>
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="py-3 px-4 text-right">
                       <Link
                         to={`/id-cards/${card.id}`}
-                        className="px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition inline-flex items-center gap-1"
+                        className="px-2.5 py-1 text-[12px] font-medium bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-md transition-colors inline-flex items-center gap-1"
                       >
-                        <Eye className="w-3.5 h-3.5" />
-                        View / Print
+                        <Eye className="w-3.5 h-3.5 opacity-60" />
+                        View
                       </Link>
                     </td>
                   </tr>
