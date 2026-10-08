@@ -68360,8 +68360,22 @@ var app_default = app;
 
 // src/server/serverlessEntry.ts
 var listener = getRequestListener(app_default.fetch);
-function handler(req, res) {
-  return listener(req, res);
+async function handler(req, res) {
+  try {
+    return await listener(req, res);
+  } catch (err) {
+    console.error("SERVERLESS EXCEPTION:", err);
+    if (!res.headersSent) {
+      res.statusCode = 500;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({
+        success: false,
+        error: "Serverless Handler Exception",
+        details: err?.message || String(err),
+        stack: err?.stack
+      }));
+    }
+  }
 }
 export {
   handler as default
