@@ -39,7 +39,8 @@ app.post('/api/auth/login', async (c) => {
 
     return c.json({ success: true, redirect: '/dashboard' });
   } catch (err: any) {
-    return c.json({ success: false, error: 'Authentication failed' }, 500);
+    console.error('Login error:', err);
+    return c.json({ success: false, error: 'Authentication failed', details: err?.message || String(err) }, 500);
   }
 });
 
