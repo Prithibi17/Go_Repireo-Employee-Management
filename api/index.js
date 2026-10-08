@@ -68571,14 +68571,12 @@ app.get("/api/verify/certificate/:code", async (c) => {
 });
 var app_default = app;
 
-// api/index.ts
-var config2 = {
-  runtime: "nodejs"
-};
-var index_default = handle(app_default);
+// src/server/serverlessEntry.ts
+var config2 = { runtime: "nodejs" };
+var serverlessEntry_default = handle(app_default);
 export {
   config2 as config,
-  index_default as default
+  serverlessEntry_default as default
 };
 /*! Bundled license information:
 
