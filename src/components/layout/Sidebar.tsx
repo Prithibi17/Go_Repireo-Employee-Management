@@ -1,9 +1,6 @@
-'use client';
-
 import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutDashboard, Users, UserCheck, GraduationCap, 
   CreditCard, Award, ShieldCheck, Settings, LogOut,
@@ -20,7 +17,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentUser }: SidebarProps) {
-  const pathname = usePathname();
+  const { pathname, search } = useLocation();
+  const currentPathWithSearch = `${pathname}${search}`;
+  const { logout } = useAuth();
 
   const navigation = [
     {
@@ -58,12 +57,10 @@ export function Sidebar({ currentUser }: SidebarProps) {
       {/* Brand Header */}
       <div className="p-5 border-b border-slate-800 flex items-center space-x-3">
         <div className="w-10 h-10 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center overflow-hidden shrink-0">
-          <Image 
+          <img 
             src="/gorepireo-logo.png" 
             alt="Go_Repireo" 
-            width={34} 
-            height={34} 
-            className="object-contain"
+            className="w-[34px] h-[34px] object-contain"
           />
         </div>
         <div className="min-w-0">
@@ -84,11 +81,13 @@ export function Sidebar({ currentUser }: SidebarProps) {
             </h2>
             {group.items.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== '/dashboard' && item.href !== '/people' && pathname.startsWith(item.href));
+              const isActive = item.href.includes('?') 
+                ? currentPathWithSearch === item.href 
+                : pathname === item.href || (item.href !== '/dashboard' && item.href !== '/people' && pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.name}
-                  href={item.href}
+                  to={item.href}
                   className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive 
                       ? 'bg-blue-600 text-white shadow-sm' 
@@ -122,15 +121,14 @@ export function Sidebar({ currentUser }: SidebarProps) {
             </div>
           </div>
 
-          <form action="/api/auth/logout" method="POST">
-            <button
-              type="submit"
-              title="Sign out"
-              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </form>
+          <button
+            onClick={() => logout()}
+            type="button"
+            title="Sign out"
+            className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </aside>

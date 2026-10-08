@@ -1,6 +1,6 @@
 import React from 'react';
 import { LucideIcon, Inbox } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 interface EmptyStateProps {
   icon?: LucideIcon;
@@ -28,7 +28,7 @@ export function EmptyState({
       </p>
       {actionHref && actionLabel && (
         <Link
-          href={actionHref}
+          to={actionHref}
           className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition shadow-xs"
         >
           {actionLabel}

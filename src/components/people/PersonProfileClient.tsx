@@ -1,8 +1,5 @@
-'use client';
-
 import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link } from 'react-router-dom';
 import { Person, Internship, IdCard, Certificate, CompanySettings, ActivityLog } from '@/types';
 import { PersonAvatar, PersonStatusBadge, PersonTypeBadge } from '@/components/ui/Badges';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -24,6 +21,7 @@ interface PersonProfileClientProps {
   company: CompanySettings;
   activityLogs: ActivityLog[];
   userRole: string;
+  onRefresh?: () => void;
 }
 
 export function PersonProfileClient({
@@ -34,8 +32,8 @@ export function PersonProfileClient({
   company,
   activityLogs,
   userRole,
+  onRefresh,
 }: PersonProfileClientProps) {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'overview' | 'idcard' | 'certificates' | 'activity'>('overview');
   const [loading, setLoading] = useState(false);
 
@@ -82,7 +80,7 @@ export function PersonProfileClient({
       if (data.success) {
         setShowDeleteCertDialog(false);
         setCertToDelete(null);
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to delete certificate');
       }
@@ -104,7 +102,7 @@ export function PersonProfileClient({
       if (data.success) {
         setShowGenerateIdDialog(false);
         setActiveTab('idcard');
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to generate ID card');
       }
@@ -128,7 +126,7 @@ export function PersonProfileClient({
       const data = await res.json();
       if (data.success) {
         setShowRevokeIdDialog(false);
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to revoke ID card');
       }
@@ -154,7 +152,7 @@ export function PersonProfileClient({
       const data = await res.json();
       if (data.success) {
         setShowCompleteDialog(false);
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to complete internship');
       }
@@ -180,7 +178,7 @@ export function PersonProfileClient({
       if (data.success) {
         setShowIssueCertDialog(false);
         setActiveTab('certificates');
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to issue certificate');
       }
@@ -198,7 +196,7 @@ export function PersonProfileClient({
       const data = await res.json();
       if (data.success) {
         setShowArchiveDialog(false);
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to archive person');
       }
@@ -278,7 +276,7 @@ export function PersonProfileClient({
 
             {/* Edit Profile Action */}
             <Link
-              href={`/people/${person.id}/edit`}
+              to={`/people/${person.id}/edit`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg shadow-xs transition"
             >
               <Edit className="w-3.5 h-3.5 text-slate-600" />

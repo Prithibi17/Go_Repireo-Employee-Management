@@ -5,7 +5,7 @@ import { Certificate, CompanySettings } from '@/types';
 import { QRCodeImage } from '@/components/ui/QRCodeImage';
 import { formatDate } from '@/lib/utils';
 import { Download, Printer, ShieldCheck, ExternalLink } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -56,7 +56,7 @@ export function CertificateDocument({
             Print Certificate
           </button>
           <Link
-            href={`/verify/certificate/${certificate.public_verification_code}`}
+            to={`/verify/certificate/${certificate.public_verification_code}`}
             target="_blank"
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg shadow-xs transition"
           >

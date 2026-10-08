@@ -1,7 +1,5 @@
-'use client';
-
 import React from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useSearchParams } from 'react-router-dom';
 import { Search, Filter } from 'lucide-react';
 import { Department } from '@/types';
 
@@ -10,24 +8,21 @@ interface PeopleFilterBarProps {
 }
 
 export function PeopleFilterBar({ departments }: PeopleFilterBarProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const currentTab = searchParams.get('tab') || 'ALL';
   const currentType = searchParams.get('type') || '';
   const currentDept = searchParams.get('dept') || 'ALL';
   const currentStatus = searchParams.get('status') || 'ALL';
   const currentSearch = searchParams.get('search') || '';
 
   const updateParam = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams);
     if (value && value !== 'ALL') {
       params.set(key, value);
     } else {
       params.delete(key);
     }
-    router.push(`${pathname}?${params.toString()}`);
+    setSearchParams(params);
   };
 
   return (
@@ -54,7 +49,7 @@ export function PeopleFilterBar({ departments }: PeopleFilterBarProps) {
                 const params = new URLSearchParams();
                 if (tab.type) params.set('type', tab.type);
                 if (tab.status) params.set('status', tab.status);
-                router.push(`${pathname}?${params.toString()}`);
+                setSearchParams(params);
               }}
               className={`pb-3 px-3 text-sm font-semibold border-b-2 transition ${
                 isActive

@@ -1,7 +1,4 @@
-'use client';
-
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { CompanySettings, Department } from '@/types';
 import { Building2, Save, Upload, Plus } from 'lucide-react';
 
@@ -9,10 +6,10 @@ interface SettingsClientProps {
   settings: CompanySettings;
   departments: Department[];
   canEdit: boolean;
+  onRefresh?: () => void;
 }
 
-export function SettingsClient({ settings, departments, canEdit }: SettingsClientProps) {
-  const router = useRouter();
+export function SettingsClient({ settings, departments, canEdit, onRefresh }: SettingsClientProps) {
   const [formData, setFormData] = useState({
     company_name: settings.company_name,
     legal_name: settings.legal_name || '',
@@ -52,7 +49,7 @@ export function SettingsClient({ settings, departments, canEdit }: SettingsClien
       if (data.success) {
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to save settings');
       }
@@ -72,7 +69,7 @@ export function SettingsClient({ settings, departments, canEdit }: SettingsClien
       const data = await res.json();
       if (data.success) {
         setNewDeptName('');
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to add department');
       }

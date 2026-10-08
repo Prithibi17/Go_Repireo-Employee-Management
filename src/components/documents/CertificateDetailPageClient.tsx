@@ -1,8 +1,5 @@
-'use client';
-
 import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link, useNavigate } from 'react-router-dom';
 import { Certificate, CompanySettings } from '@/types';
 import { CertificateDocument } from '@/components/documents/CertificateDocument';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -14,14 +11,16 @@ interface CertificateDetailPageClientProps {
   certificate: Certificate;
   company: CompanySettings;
   canRevoke: boolean;
+  onRefresh?: () => void;
 }
 
 export function CertificateDetailPageClient({
   certificate,
   company,
   canRevoke,
+  onRefresh,
 }: CertificateDetailPageClientProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [showRevokeDialog, setShowRevokeDialog] = useState(false);
   const [revokeReason, setRevokeReason] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -41,7 +40,7 @@ export function CertificateDetailPageClient({
       const data = await res.json();
       if (data.success) {
         setShowRevokeDialog(false);
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to revoke certificate');
       }
@@ -63,7 +62,7 @@ export function CertificateDetailPageClient({
       const data = await res.json();
       if (data.success) {
         setShowDeleteDialog(false);
-        router.push('/certificates');
+        navigate('/certificates');
       } else {
         alert(data.error || 'Failed to delete certificate');
       }
@@ -80,7 +79,7 @@ export function CertificateDetailPageClient({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div className="flex items-center gap-3">
           <Link
-            href="/certificates"
+            to="/certificates"
             className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -100,7 +99,7 @@ export function CertificateDetailPageClient({
 
         <div className="flex items-center gap-2">
           <Link
-            href={publicVerifyUrl}
+            to={publicVerifyUrl}
             target="_blank"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg shadow-xs transition"
           >

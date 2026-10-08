@@ -1,7 +1,4 @@
-'use client';
-
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Profile, UserRole } from '@/types';
 import { ShieldCheck, ShieldAlert, User, CheckCircle2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
@@ -10,10 +7,10 @@ interface UsersAccessClientProps {
   profiles: Profile[];
   currentUserId: string;
   isOwner: boolean;
+  onRefresh?: () => void;
 }
 
-export function UsersAccessClient({ profiles, currentUserId, isOwner }: UsersAccessClientProps) {
-  const router = useRouter();
+export function UsersAccessClient({ profiles, currentUserId, isOwner, onRefresh }: UsersAccessClientProps) {
   const [loading, setLoading] = useState(false);
 
   const handleRoleChange = async (profileId: string, newRole: UserRole) => {
@@ -22,11 +19,11 @@ export function UsersAccessClient({ profiles, currentUserId, isOwner }: UsersAcc
       const res = await fetch('/api/users/role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile_id: profileId, role: newRole }),
+        body: JSON.stringify({ profileId, role: newRole }),
       });
       const data = await res.json();
       if (data.success) {
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to update user role');
       }

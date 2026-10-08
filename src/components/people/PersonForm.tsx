@@ -1,10 +1,7 @@
-'use client';
-
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate, Link } from 'react-router-dom';
 import { Department, Person } from '@/types';
 import { UserCheck, GraduationCap, ArrowLeft, Upload, Shield } from 'lucide-react';
-import Link from 'next/link';
 
 interface PersonFormProps {
   departments: Department[];
@@ -14,7 +11,7 @@ interface PersonFormProps {
 }
 
 export function PersonForm({ departments, managers, initialData, personId }: PersonFormProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const isEditing = Boolean(personId && initialData);
   const [personType, setPersonType] = useState<'EMPLOYEE' | 'INTERN'>(initialData?.person_type || 'INTERN');
   const [loading, setLoading] = useState(false);
@@ -100,8 +97,7 @@ export function PersonForm({ departments, managers, initialData, personId }: Per
 
         const result = await res.json();
         if (result.success && result.person?.id) {
-          router.push(`/people/${result.person.id}`);
-          router.refresh();
+          navigate(`/people/${result.person.id}`);
         } else {
           setError(result.error || 'Failed to update person record');
         }
@@ -118,8 +114,7 @@ export function PersonForm({ departments, managers, initialData, personId }: Per
 
         const result = await res.json();
         if (result.success && result.person?.id) {
-          router.push(`/people/${result.person.id}`);
-          router.refresh();
+          navigate(`/people/${result.person.id}`);
         } else {
           setError(result.error || 'Failed to create person record');
         }
@@ -581,7 +576,7 @@ export function PersonForm({ departments, managers, initialData, personId }: Per
       {/* Submit Toolbar */}
       <div className="flex items-center justify-between pt-4 border-t border-slate-200">
         <Link
-          href={isEditing ? `/people/${personId}` : '/people'}
+          to={isEditing ? `/people/${personId}` : '/people'}
           className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
         >
           <ArrowLeft className="w-4 h-4" />

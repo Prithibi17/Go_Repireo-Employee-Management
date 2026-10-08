@@ -1,8 +1,5 @@
-'use client';
-
 import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link } from 'react-router-dom';
 import { Certificate } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -13,10 +10,10 @@ import { Award, Eye, Trash2 } from 'lucide-react';
 interface CertificateListTableProps {
   certificates: Certificate[];
   canManage: boolean;
+  onRefresh?: () => void;
 }
 
-export function CertificateListTable({ certificates, canManage }: CertificateListTableProps) {
-  const router = useRouter();
+export function CertificateListTable({ certificates, canManage, onRefresh }: CertificateListTableProps) {
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,7 +31,7 @@ export function CertificateListTable({ certificates, canManage }: CertificateLis
       if (data.success) {
         setShowDeleteDialog(false);
         setSelectedCert(null);
-        router.refresh();
+        onRefresh?.();
       } else {
         alert(data.error || 'Failed to delete certificate');
       }
@@ -76,7 +73,7 @@ export function CertificateListTable({ certificates, canManage }: CertificateLis
               {certificates.map((cert) => (
                 <tr key={cert.id} className="hover:bg-slate-50/60 transition group">
                   <td className="py-3.5 px-4 font-mono text-xs font-bold text-slate-900">
-                    <Link href={`/certificates/${cert.id}`} className="hover:underline text-blue-600">
+                    <Link to={`/certificates/${cert.id}`} className="hover:underline text-blue-600">
                       {cert.certificate_number}
                     </Link>
                   </td>
@@ -102,7 +99,7 @@ export function CertificateListTable({ certificates, canManage }: CertificateLis
                   <td className="py-3.5 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Link
-                        href={`/certificates/${cert.id}`}
+                        to={`/certificates/${cert.id}`}
                         className="px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition inline-flex items-center gap-1"
                       >
                         <Eye className="w-3.5 h-3.5" />
