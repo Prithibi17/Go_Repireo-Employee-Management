@@ -227,17 +227,21 @@ export async function initTursoSchema() {
     args: []
   });
 
-  // Seed essential company departments
-  await db.execute({
-    sql: `INSERT OR IGNORE INTO departments (id, name, display_order, is_active, created_at) VALUES 
-      ('dept-tech', 'Technology', 1, 1, datetime('now')),
-      ('dept-ops', 'Operations', 2, 1, datetime('now')),
-      ('dept-des', 'Design', 3, 1, datetime('now')),
-      ('dept-mkt', 'Marketing', 4, 1, datetime('now')),
-      ('dept-bd', 'Business Development', 5, 1, datetime('now')),
-      ('dept-fin', 'Finance', 6, 1, datetime('now')),
-      ('dept-mgmt', 'Management', 7, 1, datetime('now')),
-      ('dept-oth', 'Other', 8, 1, datetime('now'));`,
-    args: []
-  });
+  // Seed essential company departments only once during initial setup
+  const seedCheck = await db.execute("SELECT current_value FROM app_sequences WHERE name = 'departments_seeded'");
+  if (seedCheck.rows.length === 0) {
+    await db.execute({
+      sql: `INSERT OR IGNORE INTO departments (id, name, display_order, is_active, created_at) VALUES 
+        ('dept-tech', 'Technology', 1, 1, datetime('now')),
+        ('dept-ops', 'Operations', 2, 1, datetime('now')),
+        ('dept-des', 'Design', 3, 1, datetime('now')),
+        ('dept-mkt', 'Marketing', 4, 1, datetime('now')),
+        ('dept-bd', 'Business Development', 5, 1, datetime('now')),
+        ('dept-fin', 'Finance', 6, 1, datetime('now')),
+        ('dept-mgmt', 'Management', 7, 1, datetime('now')),
+        ('dept-oth', 'Other', 8, 1, datetime('now'));`,
+      args: []
+    });
+    await db.execute("INSERT OR REPLACE INTO app_sequences (name, current_value) VALUES ('departments_seeded', 1)");
+  }
 }

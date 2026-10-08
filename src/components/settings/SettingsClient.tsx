@@ -26,6 +26,11 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
     certificate_body_template: settings.certificate_body_template,
   });
 
+  const [localDepts, setLocalDepts] = useState<Department[]>(departments);
+  useEffect(() => {
+    setLocalDepts(departments);
+  }, [departments]);
+
   const [newDeptName, setNewDeptName] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -136,7 +141,8 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
         body: JSON.stringify({ name: newDeptName.trim() }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.department) {
+        setLocalDepts((prev) => [...prev, data.department]);
         setNewDeptName('');
         onRefresh?.();
       } else {
@@ -151,6 +157,8 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
     if (!confirm(`Are you sure you want to delete the "${name}" department? Any staff assigned to this department will have their department cleared.`)) {
       return;
     }
+    // Optimistically update UI immediately
+    setLocalDepts((prev) => prev.filter((d) => d.id !== id));
     try {
       const res = await fetch(`/api/departments/${id}`, {
         method: 'DELETE',
@@ -160,9 +168,11 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
         onRefresh?.();
       } else {
         alert(data.error || 'Failed to delete department');
+        onRefresh?.();
       }
     } catch {
       alert('Error deleting department');
+      onRefresh?.();
     }
   };
 
@@ -363,7 +373,7 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3">
-          {departments.map((d) => (
+          {localDepts.map((d) => (
             <div
               key={d.id}
               className="group p-2.5 rounded-lg border border-slate-200 bg-slate-50/60 hover:bg-white text-xs font-semibold text-slate-800 flex items-center justify-between transition-colors shadow-2xs"

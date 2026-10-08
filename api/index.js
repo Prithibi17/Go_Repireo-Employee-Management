@@ -46759,18 +46759,22 @@ async function initTursoSchema() {
     );`,
     args: []
   });
-  await db.execute({
-    sql: `INSERT OR IGNORE INTO departments (id, name, display_order, is_active, created_at) VALUES 
-      ('dept-tech', 'Technology', 1, 1, datetime('now')),
-      ('dept-ops', 'Operations', 2, 1, datetime('now')),
-      ('dept-des', 'Design', 3, 1, datetime('now')),
-      ('dept-mkt', 'Marketing', 4, 1, datetime('now')),
-      ('dept-bd', 'Business Development', 5, 1, datetime('now')),
-      ('dept-fin', 'Finance', 6, 1, datetime('now')),
-      ('dept-mgmt', 'Management', 7, 1, datetime('now')),
-      ('dept-oth', 'Other', 8, 1, datetime('now'));`,
-    args: []
-  });
+  const seedCheck = await db.execute("SELECT current_value FROM app_sequences WHERE name = 'departments_seeded'");
+  if (seedCheck.rows.length === 0) {
+    await db.execute({
+      sql: `INSERT OR IGNORE INTO departments (id, name, display_order, is_active, created_at) VALUES 
+        ('dept-tech', 'Technology', 1, 1, datetime('now')),
+        ('dept-ops', 'Operations', 2, 1, datetime('now')),
+        ('dept-des', 'Design', 3, 1, datetime('now')),
+        ('dept-mkt', 'Marketing', 4, 1, datetime('now')),
+        ('dept-bd', 'Business Development', 5, 1, datetime('now')),
+        ('dept-fin', 'Finance', 6, 1, datetime('now')),
+        ('dept-mgmt', 'Management', 7, 1, datetime('now')),
+        ('dept-oth', 'Other', 8, 1, datetime('now'));`,
+      args: []
+    });
+    await db.execute("INSERT OR REPLACE INTO app_sequences (name, current_value) VALUES ('departments_seeded', 1)");
+  }
 }
 
 // src/lib/tokens.ts
@@ -47627,9 +47631,10 @@ var DataService = {
     await ensureDb();
     const db = getTursoClient();
     const res = await db.execute(`
-      SELECT c.*, p.person_code, p.full_name, p.profile_photo_path, p.designation, p.person_type
+      SELECT c.*, p.person_code, p.full_name, p.profile_photo_path, p.designation, p.person_type, d.name as dept_name
       FROM id_cards c
       LEFT JOIN people p ON c.person_id = p.id
+      LEFT JOIN departments d ON p.department_id = d.id
       ORDER BY c.created_at DESC
     `);
     return res.rows.map((row) => ({
@@ -47650,6 +47655,7 @@ var DataService = {
         profile_photo_path: row.profile_photo_path ? String(row.profile_photo_path) : null,
         designation: String(row.designation),
         person_type: row.person_type,
+        department: row.dept_name ? { id: "", name: String(row.dept_name), display_order: 0, is_active: true, created_at: "" } : null,
         joining_date: "",
         status: "ACTIVE",
         created_at: "",

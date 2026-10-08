@@ -949,9 +949,10 @@ export const DataService = {
     await ensureDb();
     const db = getTursoClient();
     const res = await db.execute(`
-      SELECT c.*, p.person_code, p.full_name, p.profile_photo_path, p.designation, p.person_type
+      SELECT c.*, p.person_code, p.full_name, p.profile_photo_path, p.designation, p.person_type, d.name as dept_name
       FROM id_cards c
       LEFT JOIN people p ON c.person_id = p.id
+      LEFT JOIN departments d ON p.department_id = d.id
       ORDER BY c.created_at DESC
     `);
 
@@ -973,6 +974,7 @@ export const DataService = {
         profile_photo_path: row.profile_photo_path ? String(row.profile_photo_path) : null,
         designation: String(row.designation),
         person_type: row.person_type as any,
+        department: row.dept_name ? { id: '', name: String(row.dept_name), display_order: 0, is_active: true, created_at: '' } : null,
         joining_date: '',
         status: 'ACTIVE',
         created_at: '',
