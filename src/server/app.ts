@@ -454,6 +454,21 @@ app.post('/api/departments', async (c) => {
   }
 });
 
+app.delete('/api/departments/:id', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManageSettings(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+
+    const id = c.req.param('id');
+    await DataService.deleteDepartment(id);
+    return c.json({ success: true, message: 'Department deleted successfully' });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
 // === SETTINGS ===
 app.get('/api/settings', async (c) => {
   try {

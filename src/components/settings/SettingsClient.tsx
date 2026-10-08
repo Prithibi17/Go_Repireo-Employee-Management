@@ -147,6 +147,25 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
     }
   };
 
+  const handleDeleteDept = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete the "${name}" department? Any staff assigned to this department will have their department cleared.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/departments/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        onRefresh?.();
+      } else {
+        alert(data.error || 'Failed to delete department');
+      }
+    } catch {
+      alert('Error deleting department');
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-4xl">
       <div className="pb-4 border-b border-slate-200">
@@ -347,9 +366,19 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
           {departments.map((d) => (
             <div
               key={d.id}
-              className="p-2.5 rounded-lg border border-slate-200 bg-slate-50/60 text-xs font-semibold text-slate-800 flex items-center justify-between"
+              className="group p-2.5 rounded-lg border border-slate-200 bg-slate-50/60 hover:bg-white text-xs font-semibold text-slate-800 flex items-center justify-between transition-colors shadow-2xs"
             >
-              <span>{d.name}</span>
+              <span className="truncate pr-1" title={d.name}>{d.name}</span>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteDept(d.id, d.name)}
+                  className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors opacity-70 group-hover:opacity-100 flex-shrink-0"
+                  title={`Delete ${d.name}`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           ))}
         </div>

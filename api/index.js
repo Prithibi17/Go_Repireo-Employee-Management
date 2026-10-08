@@ -46944,6 +46944,26 @@ var DataService = {
       created_at: createdAt
     };
   },
+  async deleteDepartment(id) {
+    await ensureDb();
+    const db = getTursoClient();
+    const checkRes = await db.execute({
+      sql: "SELECT id FROM departments WHERE id = ?",
+      args: [id]
+    });
+    if (checkRes.rows.length === 0) {
+      throw new Error("Department not found");
+    }
+    await db.execute({
+      sql: "UPDATE people SET department_id = NULL WHERE department_id = ?",
+      args: [id]
+    });
+    await db.execute({
+      sql: "DELETE FROM departments WHERE id = ?",
+      args: [id]
+    });
+    return true;
+  },
   // === PROFILES / USERS & ACCESS ===
   async getProfiles() {
     await ensureDb();
@@ -68710,6 +68730,19 @@ app.post("/api/departments", async (c) => {
     if (!name) return c.json({ success: false, error: "Name is required" }, 400);
     const department = await DataService.addDepartment(name, description);
     return c.json({ success: true, department });
+  } catch (err) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+app.delete("/api/departments/:id", async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManageSettings(currentUser.role)) {
+      return c.json({ success: false, error: "Unauthorized" }, 403);
+    }
+    const id = c.req.param("id");
+    await DataService.deleteDepartment(id);
+    return c.json({ success: true, message: "Department deleted successfully" });
   } catch (err) {
     return c.json({ success: false, error: err.message }, 400);
   }

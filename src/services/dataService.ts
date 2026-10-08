@@ -158,6 +158,33 @@ export const DataService = {
     };
   },
 
+  async deleteDepartment(id: string): Promise<boolean> {
+    await ensureDb();
+    const db = getTursoClient();
+
+    const checkRes = await db.execute({
+      sql: 'SELECT id FROM departments WHERE id = ?',
+      args: [id],
+    });
+    if (checkRes.rows.length === 0) {
+      throw new Error('Department not found');
+    }
+
+    // Unlink any members assigned to this department
+    await db.execute({
+      sql: 'UPDATE people SET department_id = NULL WHERE department_id = ?',
+      args: [id],
+    });
+
+    // Delete the department
+    await db.execute({
+      sql: 'DELETE FROM departments WHERE id = ?',
+      args: [id],
+    });
+
+    return true;
+  },
+
   // === PROFILES / USERS & ACCESS ===
   async getProfiles(): Promise<Profile[]> {
     await ensureDb();
