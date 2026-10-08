@@ -16,6 +16,7 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { UsersAccessPage } from '@/pages/UsersAccessPage';
 import { VerifyIdPage } from '@/pages/VerifyIdPage';
 import { VerifyCertificatePage } from '@/pages/VerifyCertificatePage';
+import { EmbedCardPage } from '@/pages/EmbedCardPage';
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/verify/id/:code" element={<VerifyIdPage />} />
         <Route path="/verify/certificate/:code" element={<VerifyCertificatePage />} />
+        <Route path="/embed/id-card/:identifier" element={<EmbedCardPage />} />
 
         {/* Protected Dashboard Routes */}
         <Route element={<AppLayout />}>

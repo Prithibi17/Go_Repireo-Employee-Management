@@ -236,3 +236,52 @@ export interface PublicCertificateVerificationResponse {
     logo_url: string;
   };
 }
+
+export interface PublicCardApiResponse {
+  success: boolean;
+  found: boolean;
+  message?: string;
+  card?: {
+    id: string;
+    card_number: string;
+    status: IdCardStatus;
+    issued_at: string;
+    valid_from: string;
+    valid_until: string;
+    public_verification_code: string;
+    verification_url: string;
+    qr_code_data_url: string;
+  } | null;
+  person?: {
+    id: string;
+    person_code: string;
+    full_name: string;
+    person_type: PersonType;
+    designation: string;
+    department: string;
+    status: PersonStatus;
+    avatar_url?: string | null;
+    company_email?: string | null;
+    work_location?: string | null;
+  } | null;
+  company?: {
+    name: string;
+    legal_name?: string | null;
+    tagline: string;
+    website: string;
+    support_email: string;
+    logo_url: string;
+    mascot_url: string;
+  };
+  design?: {
+    theme: string;
+    primary_color: string;
+    accent_color: string;
+    badge_color: string;
+    card_dimensions: {
+      width_px: number;
+      height_px: number;
+      aspect_ratio: string;
+    };
+  };
+}

@@ -1,10 +1,11 @@
 import { getTursoClient } from '../lib/turso';
 import { initTursoSchema } from '../lib/tursoSchema';
 import { generateVerificationToken, hashToken, generateCryptoAlphanumeric } from '../lib/tokens';
+import QRCode from 'qrcode';
 import { 
   Person, Internship, IdCard, Certificate, ActivityLog, 
   CompanySettings, Department, Profile, PublicIdVerificationResponse, 
-  PublicCertificateVerificationResponse
+  PublicCertificateVerificationResponse, PublicCardApiResponse
 } from '../types';
 import { PersonFormData } from '../validators';
 
@@ -1216,6 +1217,182 @@ export const DataService = {
         logo_url: company.logo_url || '/gorepireo-logo.png',
       },
     };
+  },
+
+  // === PUBLIC CARD API FOR EXTERNAL WEBSITES ===
+  async getPublicCardByIdentifier(identifier: string, origin?: string): Promise<PublicCardApiResponse> {
+    await ensureDb();
+    const db = getTursoClient();
+    const cleanId = identifier.trim();
+    const company = await this.getCompanySettings();
+    const appBaseUrl = origin || 'https://go-repireo-employee-management.vercel.app';
+
+    // 1. Try finding by ID card directly or by person
+    const cardRes = await db.execute({
+      sql: `SELECT c.*, 
+                   p.id as person_id, p.person_code, p.full_name, p.profile_photo_path,
+                   p.designation, p.person_type, p.status as person_status,
+                   p.company_email, p.personal_email, p.work_location,
+                   d.name as dept_name
+            FROM id_cards c
+            JOIN people p ON c.person_id = p.id
+            LEFT JOIN departments d ON p.department_id = d.id
+            WHERE UPPER(p.person_code) = UPPER(?)
+               OR UPPER(c.card_number) = UPPER(?)
+               OR c.public_verification_code = ?
+               OR c.id = ?
+               OR p.id = ?
+               OR LOWER(p.company_email) = LOWER(?)
+               OR LOWER(p.personal_email) = LOWER(?)
+            ORDER BY (CASE WHEN c.status = 'ACTIVE' THEN 0 ELSE 1 END), c.issued_at DESC
+            LIMIT 1`,
+      args: [cleanId, cleanId, cleanId, cleanId, cleanId, cleanId, cleanId],
+    });
+
+    if (cardRes.rows.length > 0) {
+      const row = cardRes.rows[0];
+      const verifyUrl = `${appBaseUrl}/verify/id/${row.public_verification_code}`;
+
+      let qrDataUrl = '';
+      try {
+        qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+          width: 320,
+          margin: 1,
+          color: {
+            dark: '#0f172a',
+            light: '#ffffff',
+          },
+          errorCorrectionLevel: 'M',
+        });
+      } catch (err) {
+        console.error('Failed to generate QR data URL:', err);
+      }
+
+      return {
+        success: true,
+        found: true,
+        card: {
+          id: String(row.id),
+          card_number: String(row.card_number),
+          status: row.status as any,
+          issued_at: String(row.issued_at),
+          valid_from: String(row.valid_from),
+          valid_until: String(row.valid_until),
+          public_verification_code: String(row.public_verification_code),
+          verification_url: verifyUrl,
+          qr_code_data_url: qrDataUrl,
+        },
+        person: {
+          id: String(row.person_id),
+          person_code: String(row.person_code),
+          full_name: String(row.full_name),
+          person_type: row.person_type as any,
+          designation: String(row.designation),
+          department: String(row.dept_name || 'Technology'),
+          status: row.person_status as any,
+          avatar_url: row.profile_photo_path ? String(row.profile_photo_path) : null,
+          company_email: row.company_email ? String(row.company_email) : null,
+          work_location: row.work_location ? String(row.work_location) : null,
+        },
+        company: {
+          name: company.company_name,
+          legal_name: company.legal_name,
+          tagline: company.tagline,
+          website: company.website,
+          support_email: company.support_email,
+          logo_url: company.logo_url || '/gorepireo-logo.png',
+          mascot_url: '/gorepireo-mascot-modified.png',
+        },
+        design: {
+          theme: 'navy-orange',
+          primary_color: '#0f274a',
+          accent_color: '#1e40af',
+          badge_color: '#ea580c',
+          card_dimensions: {
+            width_px: 280,
+            height_px: 445,
+            aspect_ratio: '1 : 1.589',
+          },
+        },
+      };
+    }
+
+    // 2. Fallback: check if person exists even if no card was issued yet
+    const personRes = await db.execute({
+      sql: `SELECT p.*, d.name as dept_name
+            FROM people p
+            LEFT JOIN departments d ON p.department_id = d.id
+            WHERE UPPER(p.person_code) = UPPER(?)
+               OR LOWER(p.company_email) = LOWER(?)
+               OR p.id = ?
+            LIMIT 1`,
+      args: [cleanId, cleanId, cleanId],
+    });
+
+    if (personRes.rows.length > 0) {
+      const pRow = personRes.rows[0];
+      return {
+        success: true,
+        found: true,
+        message: 'Person found, but no ID card has been issued yet.',
+        card: null,
+        person: {
+          id: String(pRow.id),
+          person_code: String(pRow.person_code),
+          full_name: String(pRow.full_name),
+          person_type: pRow.person_type as any,
+          designation: String(pRow.designation),
+          department: String(pRow.dept_name || 'Technology'),
+          status: pRow.status as any,
+          avatar_url: pRow.profile_photo_path ? String(pRow.profile_photo_path) : null,
+          company_email: pRow.company_email ? String(pRow.company_email) : null,
+          work_location: pRow.work_location ? String(pRow.work_location) : null,
+        },
+        company: {
+          name: company.company_name,
+          legal_name: company.legal_name,
+          tagline: company.tagline,
+          website: company.website,
+          support_email: company.support_email,
+          logo_url: company.logo_url || '/gorepireo-logo.png',
+          mascot_url: '/gorepireo-mascot-modified.png',
+        },
+        design: {
+          theme: 'navy-orange',
+          primary_color: '#0f274a',
+          accent_color: '#1e40af',
+          badge_color: '#ea580c',
+          card_dimensions: {
+            width_px: 280,
+            height_px: 445,
+            aspect_ratio: '1 : 1.589',
+          },
+        },
+      };
+    }
+
+    return {
+      success: false,
+      found: false,
+      message: `No personnel or ID card found matching identifier: ${identifier}`,
+    };
+  },
+
+  async getPublicCardQrBuffer(identifier: string, origin?: string): Promise<Buffer | null> {
+    const data = await this.getPublicCardByIdentifier(identifier, origin);
+    if (!data.found || !data.card?.verification_url) {
+      return null;
+    }
+    return QRCode.toBuffer(data.card.verification_url, {
+      type: 'png',
+      width: 400,
+      margin: 1,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+      errorCorrectionLevel: 'M',
+    });
   },
 
   async verifyCertificateByToken(rawToken: string): Promise<PublicCertificateVerificationResponse> {

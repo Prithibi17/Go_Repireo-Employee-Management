@@ -463,8 +463,64 @@ app.put('/api/users/role', async (c) => {
   }
 });
 
+// === PUBLIC CARDS API FOR EXTERNAL WEBSITES (CORS-ENABLED) ===
+app.options('/api/public/cards/:identifier', (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  c.header('Access-Control-Allow-Headers', 'Content-Type');
+  return c.text('', 204);
+});
+
+app.get('/api/public/cards/:identifier', async (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  c.header('Cache-Control', 'public, max-age=60, s-maxage=300');
+  try {
+    const identifier = c.req.param('identifier');
+    const url = new URL(c.req.url);
+    const origin = `${url.protocol}//${url.host}`;
+    const result = await DataService.getPublicCardByIdentifier(identifier, origin);
+    if (!result.found) {
+      return c.json(result, 404);
+    }
+    return c.json(result, 200);
+  } catch (err: any) {
+    return c.json({ success: false, found: false, error: err.message }, 500);
+  }
+});
+
+app.options('/api/public/cards/:identifier/qr', (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  return c.text('', 204);
+});
+
+app.get('/api/public/cards/:identifier/qr', async (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  try {
+    const identifier = c.req.param('identifier');
+    const url = new URL(c.req.url);
+    const origin = `${url.protocol}//${url.host}`;
+    const buffer = await DataService.getPublicCardQrBuffer(identifier, origin);
+    if (!buffer) {
+      return c.text('QR code not found for identifier', 404);
+    }
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  } catch (err: any) {
+    return c.text(`Failed to generate QR: ${err.message}`, 500);
+  }
+});
+
 // === PUBLIC VERIFICATION ===
 app.get('/api/verify/id/:code', async (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
   try {
     const code = c.req.param('code');
     const result = await DataService.verifyIdByToken(code);
@@ -475,6 +531,7 @@ app.get('/api/verify/id/:code', async (c) => {
 });
 
 app.get('/api/verify/certificate/:code', async (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
   try {
     const code = c.req.param('code');
     const result = await DataService.verifyCertificateByToken(code);
@@ -485,3 +542,4 @@ app.get('/api/verify/certificate/:code', async (c) => {
 });
 
 export default app;
+
