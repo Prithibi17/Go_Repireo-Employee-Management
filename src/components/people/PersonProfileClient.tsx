@@ -60,6 +60,17 @@ export function PersonProfileClient({
   const [deactivateIdOnComplete, setDeactivateIdOnComplete] = useState(false);
 
   const [showGenerateIdDialog, setShowGenerateIdDialog] = useState(false);
+  const [generateCardDates, setGenerateCardDates] = useState({
+    valid_from: new Date().toISOString().split('T')[0],
+    valid_until: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
+  });
+
+  const [showEditDatesDialog, setShowEditDatesDialog] = useState(false);
+  const [editCardDates, setEditCardDates] = useState({
+    valid_from: activeIdCard?.valid_from || new Date().toISOString().split('T')[0],
+    valid_until: activeIdCard?.valid_until || new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
+  });
+
   const [showRevokeIdDialog, setShowRevokeIdDialog] = useState(false);
   const [revokeIdReason, setRevokeIdReason] = useState('');
 
@@ -110,7 +121,11 @@ export function PersonProfileClient({
       const res = await fetch('/api/id-cards/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ person_id: person.id }),
+        body: JSON.stringify({ 
+          person_id: person.id,
+          valid_from: generateCardDates.valid_from,
+          valid_until: generateCardDates.valid_until,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -120,6 +135,33 @@ export function PersonProfileClient({
       } else {
         alert(data.error || 'Failed to generate ID card');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateCardDates = async () => {
+    if (!activeIdCard) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/id-cards/update-dates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          card_id: activeIdCard.id,
+          valid_from: editCardDates.valid_from,
+          valid_until: editCardDates.valid_until,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowEditDatesDialog(false);
+        onRefresh?.();
+      } else {
+        alert(data.error || 'Failed to update ID card dates');
+      }
+    } catch {
+      alert('Network error while updating ID card dates');
     } finally {
       setLoading(false);
     }
@@ -520,15 +562,30 @@ export function PersonProfileClient({
                     Card Ref: <code className="font-mono font-bold text-slate-800">{activeIdCard.card_number}</code> • Issued: {formatDate(activeIdCard.issued_at)}
                   </p>
                 </div>
-                {activeIdCard.status === 'ACTIVE' && (
+                <div className="flex flex-wrap items-center gap-2">
                   <button
-                    onClick={() => setShowRevokeIdDialog(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition"
+                    onClick={() => {
+                      setEditCardDates({
+                        valid_from: activeIdCard.valid_from,
+                        valid_until: activeIdCard.valid_until,
+                      });
+                      setShowEditDatesDialog(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-xs transition"
                   >
-                    <Ban className="w-3.5 h-3.5" />
-                    Revoke ID Card
+                    <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                    Edit Validity Dates
                   </button>
-                )}
+                  {activeIdCard.status === 'ACTIVE' && (
+                    <button
+                      onClick={() => setShowRevokeIdDialog(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition"
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                      Revoke ID Card
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Render ID Card with front and back */}
@@ -711,7 +768,95 @@ export function PersonProfileClient({
         isLoading={loading}
         onConfirm={handleGenerateId}
         onCancel={() => setShowGenerateIdDialog(false)}
-      />
+      >
+        <div className="space-y-3 pt-2 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Issue Date (Valid From)</label>
+            <input
+              type="date"
+              required
+              value={generateCardDates.valid_from}
+              onChange={(e) => {
+                const newFrom = e.target.value;
+                const d = new Date(newFrom);
+                d.setFullYear(d.getFullYear() + 1);
+                setGenerateCardDates({
+                  valid_from: newFrom,
+                  valid_until: d.toISOString().split('T')[0],
+                });
+              }}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Valid Till Date (Expiry)</label>
+            <input
+              type="date"
+              required
+              value={generateCardDates.valid_until}
+              onChange={(e) => setGenerateCardDates({ ...generateCardDates, valid_until: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
+            />
+          </div>
+          <p className="text-[11px] text-slate-500">
+            Default validity is exactly 1 year from the issue date.
+          </p>
+        </div>
+      </ConfirmDialog>
+
+      {/* 2b. Edit ID Card Validity Dates Dialog */}
+      <ConfirmDialog
+        isOpen={showEditDatesDialog}
+        title="Change ID Card Validity Dates"
+        description="Update the official Issue Date and Valid Until date displayed on this active ID Card. The default validity is 1 year from the issue date."
+        confirmLabel="Update Dates"
+        variant="primary"
+        isLoading={loading}
+        onConfirm={handleUpdateCardDates}
+        onCancel={() => setShowEditDatesDialog(false)}
+      >
+        <div className="space-y-3 pt-2 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Issue Date (Valid From)</label>
+            <input
+              type="date"
+              required
+              value={editCardDates.valid_from}
+              onChange={(e) => {
+                const newFrom = e.target.value;
+                const d = new Date(newFrom);
+                d.setFullYear(d.getFullYear() + 1);
+                setEditCardDates({
+                  valid_from: newFrom,
+                  valid_until: d.toISOString().split('T')[0],
+                });
+              }}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Valid Till Date (Expiry)</label>
+            <input
+              type="date"
+              required
+              value={editCardDates.valid_until}
+              onChange={(e) => setEditCardDates({ ...editCardDates, valid_until: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const d = new Date(editCardDates.valid_from);
+              d.setFullYear(d.getFullYear() + 1);
+              setEditCardDates({ ...editCardDates, valid_until: d.toISOString().split('T')[0] });
+            }}
+            className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 underline"
+          >
+            ↺ Set Valid Till to 1 Year from Issue Date
+          </button>
+        </div>
+      </ConfirmDialog>
 
       {/* 3. Revoke ID Dialog */}
       <ConfirmDialog

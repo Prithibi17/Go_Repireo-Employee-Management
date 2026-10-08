@@ -47649,7 +47649,7 @@ var DataService = {
       }
     };
   },
-  async generateIdCard(personId, actor) {
+  async generateIdCard(personId, actor, customDates) {
     await ensureDb();
     const db = getTursoClient();
     const person = await this.getPersonById(personId);
@@ -47672,8 +47672,13 @@ var DataService = {
     const tokenId = `tok-${Date.now()}`;
     const cardId = `idc-${Date.now()}`;
     const now = (/* @__PURE__ */ new Date()).toISOString();
-    const company = await this.getCompanySettings();
-    const validUntilDate = new Date(Date.now() + company.id_default_validity_days * 864e5).toISOString().split("T")[0];
+    const issueDate = customDates?.valid_from?.trim() || (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    let validUntilDate = customDates?.valid_until?.trim();
+    if (!validUntilDate) {
+      const d = new Date(issueDate);
+      d.setFullYear(d.getFullYear() + 1);
+      validUntilDate = d.toISOString().split("T")[0];
+    }
     await db.execute({
       sql: "INSERT INTO verification_tokens (id, token_hash, resource_type, resource_id, status, created_at) VALUES (?, ?, 'ID_CARD', ?, 'ACTIVE', ?)",
       args: [tokenId, tokenHash, cardId, now]
@@ -47689,7 +47694,7 @@ var DataService = {
         personId,
         cardNumber,
         now,
-        (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+        issueDate,
         validUntilDate,
         tokenId,
         rawToken,
@@ -47699,10 +47704,31 @@ var DataService = {
     });
     await this.logActivity(actor, isReissue ? "ID_REISSUED" : "ID_ISSUED", "ID_CARD", cardId, {
       card_number: cardNumber,
-      person_code: person.person_code
+      person_code: person.person_code,
+      valid_from: issueDate,
+      valid_until: validUntilDate
     });
     const card = await this.getIdCardById(cardId);
     return card;
+  },
+  async updateIdCardDates(cardId, validFrom, validUntil, actor) {
+    await ensureDb();
+    const db = getTursoClient();
+    const card = await this.getIdCardById(cardId);
+    if (!card) throw new Error("ID Card not found");
+    await db.execute({
+      sql: "UPDATE id_cards SET valid_from = ?, valid_until = ? WHERE id = ?",
+      args: [validFrom.trim(), validUntil.trim(), cardId]
+    });
+    await this.logActivity(actor, "ID_DATES_UPDATED", "ID_CARD", cardId, {
+      card_number: card.card_number,
+      old_valid_from: card.valid_from,
+      new_valid_from: validFrom.trim(),
+      old_valid_until: card.valid_until,
+      new_valid_until: validUntil.trim()
+    });
+    const updated = await this.getIdCardById(cardId);
+    return updated;
   },
   async revokeIdCard(cardId, reason, actor) {
     await ensureDb();
@@ -68496,17 +68522,42 @@ app.post("/api/id-cards/generate", async (c) => {
     if (!canManagePeople(currentUser.role)) {
       return c.json({ success: false, error: "Unauthorized to generate ID cards" }, 403);
     }
-    const { personId } = await c.req.json();
-    if (!personId) {
+    const { personId, person_id, valid_from, valid_until } = await c.req.json();
+    const targetPersonId = personId || person_id;
+    if (!targetPersonId) {
       return c.json({ success: false, error: "Person ID required" }, 400);
     }
-    const card = await DataService.generateIdCard(personId, {
+    const card = await DataService.generateIdCard(
+      targetPersonId,
+      {
+        id: currentUser.id,
+        name: currentUser.full_name
+      },
+      valid_from || valid_until ? { valid_from, valid_until } : void 0
+    );
+    return c.json({ success: true, card });
+  } catch (err) {
+    return c.json({ success: false, error: err.message || "Failed to issue ID card" }, 400);
+  }
+});
+app.post("/api/id-cards/update-dates", async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: "Unauthorized to modify ID cards" }, 403);
+    }
+    const { cardId, card_id, valid_from, valid_until } = await c.req.json();
+    const targetCardId = cardId || card_id;
+    if (!targetCardId || !valid_from || !valid_until) {
+      return c.json({ success: false, error: "Card ID, valid_from, and valid_until are required" }, 400);
+    }
+    const card = await DataService.updateIdCardDates(targetCardId, valid_from, valid_until, {
       id: currentUser.id,
       name: currentUser.full_name
     });
     return c.json({ success: true, card });
   } catch (err) {
-    return c.json({ success: false, error: err.message || "Failed to issue ID card" }, 400);
+    return c.json({ success: false, error: err.message || "Failed to update ID card dates" }, 400);
   }
 });
 app.post("/api/id-cards/revoke", async (c) => {

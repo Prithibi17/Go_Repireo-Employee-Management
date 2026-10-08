@@ -221,19 +221,48 @@ app.post('/api/id-cards/generate', async (c) => {
       return c.json({ success: false, error: 'Unauthorized to generate ID cards' }, 403);
     }
 
-    const { personId } = await c.req.json();
-    if (!personId) {
+    const { personId, person_id, valid_from, valid_until } = await c.req.json();
+    const targetPersonId = personId || person_id;
+    if (!targetPersonId) {
       return c.json({ success: false, error: 'Person ID required' }, 400);
     }
 
-    const card = await DataService.generateIdCard(personId, {
+    const card = await DataService.generateIdCard(
+      targetPersonId,
+      {
+        id: currentUser.id,
+        name: currentUser.full_name,
+      },
+      valid_from || valid_until ? { valid_from, valid_until } : undefined
+    );
+
+    return c.json({ success: true, card });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to issue ID card' }, 400);
+  }
+});
+
+app.post('/api/id-cards/update-dates', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized to modify ID cards' }, 403);
+    }
+
+    const { cardId, card_id, valid_from, valid_until } = await c.req.json();
+    const targetCardId = cardId || card_id;
+    if (!targetCardId || !valid_from || !valid_until) {
+      return c.json({ success: false, error: 'Card ID, valid_from, and valid_until are required' }, 400);
+    }
+
+    const card = await DataService.updateIdCardDates(targetCardId, valid_from, valid_until, {
       id: currentUser.id,
       name: currentUser.full_name,
     });
 
     return c.json({ success: true, card });
   } catch (err: any) {
-    return c.json({ success: false, error: err.message || 'Failed to issue ID card' }, 400);
+    return c.json({ success: false, error: err.message || 'Failed to update ID card dates' }, 400);
   }
 });
 

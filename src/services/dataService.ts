@@ -969,7 +969,11 @@ export const DataService = {
     };
   },
 
-  async generateIdCard(personId: string, actor: { id?: string; name: string }): Promise<IdCard> {
+  async generateIdCard(
+    personId: string, 
+    actor: { id?: string; name: string },
+    customDates?: { valid_from?: string; valid_until?: string }
+  ): Promise<IdCard> {
     await ensureDb();
     const db = getTursoClient();
     const person = await this.getPersonById(personId);
@@ -997,8 +1001,13 @@ export const DataService = {
     const cardId = `idc-${Date.now()}`;
     const now = new Date().toISOString();
 
-    const company = await this.getCompanySettings();
-    const validUntilDate = new Date(Date.now() + company.id_default_validity_days * 86400000).toISOString().split('T')[0];
+    const issueDate = customDates?.valid_from?.trim() || new Date().toISOString().split('T')[0];
+    let validUntilDate = customDates?.valid_until?.trim();
+    if (!validUntilDate) {
+      const d = new Date(issueDate);
+      d.setFullYear(d.getFullYear() + 1);
+      validUntilDate = d.toISOString().split('T')[0];
+    }
 
     await db.execute({
       sql: "INSERT INTO verification_tokens (id, token_hash, resource_type, resource_id, status, created_at) VALUES (?, ?, 'ID_CARD', ?, 'ACTIVE', ?)",
@@ -1016,7 +1025,7 @@ export const DataService = {
         personId,
         cardNumber,
         now,
-        new Date().toISOString().split('T')[0],
+        issueDate,
         validUntilDate,
         tokenId,
         rawToken,
@@ -1028,10 +1037,40 @@ export const DataService = {
     await this.logActivity(actor, isReissue ? 'ID_REISSUED' : 'ID_ISSUED', 'ID_CARD', cardId, {
       card_number: cardNumber,
       person_code: person.person_code,
+      valid_from: issueDate,
+      valid_until: validUntilDate,
     });
 
     const card = await this.getIdCardById(cardId);
     return card!;
+  },
+
+  async updateIdCardDates(
+    cardId: string,
+    validFrom: string,
+    validUntil: string,
+    actor: { id?: string; name: string }
+  ): Promise<IdCard> {
+    await ensureDb();
+    const db = getTursoClient();
+    const card = await this.getIdCardById(cardId);
+    if (!card) throw new Error('ID Card not found');
+
+    await db.execute({
+      sql: 'UPDATE id_cards SET valid_from = ?, valid_until = ? WHERE id = ?',
+      args: [validFrom.trim(), validUntil.trim(), cardId],
+    });
+
+    await this.logActivity(actor, 'ID_DATES_UPDATED', 'ID_CARD', cardId, {
+      card_number: card.card_number,
+      old_valid_from: card.valid_from,
+      new_valid_from: validFrom.trim(),
+      old_valid_until: card.valid_until,
+      new_valid_until: validUntil.trim(),
+    });
+
+    const updated = await this.getIdCardById(cardId);
+    return updated!;
   },
 
   async revokeIdCard(cardId: string, reason: string, actor: { id?: string; name: string }): Promise<IdCard> {
