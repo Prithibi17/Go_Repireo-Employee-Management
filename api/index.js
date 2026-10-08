@@ -2040,9 +2040,9 @@ var require_event_target = __commonJS({
        *     the listener would be automatically removed when invoked.
        * @public
        */
-      addEventListener(type, handler2, options = {}) {
+      addEventListener(type, handler, options = {}) {
         for (const listener of this.listeners(type)) {
-          if (!options[kForOnEventAttribute] && listener[kListener] === handler2 && !listener[kForOnEventAttribute]) {
+          if (!options[kForOnEventAttribute] && listener[kListener] === handler && !listener[kForOnEventAttribute]) {
             return;
           }
         }
@@ -2053,7 +2053,7 @@ var require_event_target = __commonJS({
               data: isBinary ? data : data.toString()
             });
             event[kTarget] = this;
-            callListener(handler2, this, event);
+            callListener(handler, this, event);
           };
         } else if (type === "close") {
           wrapper = function onClose(code, message) {
@@ -2063,7 +2063,7 @@ var require_event_target = __commonJS({
               wasClean: this._closeFrameReceived && this._closeFrameSent
             });
             event[kTarget] = this;
-            callListener(handler2, this, event);
+            callListener(handler, this, event);
           };
         } else if (type === "error") {
           wrapper = function onError(error62) {
@@ -2072,19 +2072,19 @@ var require_event_target = __commonJS({
               message: error62.message
             });
             event[kTarget] = this;
-            callListener(handler2, this, event);
+            callListener(handler, this, event);
           };
         } else if (type === "open") {
           wrapper = function onOpen() {
             const event = new Event("open");
             event[kTarget] = this;
-            callListener(handler2, this, event);
+            callListener(handler, this, event);
           };
         } else {
           return;
         }
         wrapper[kForOnEventAttribute] = !!options[kForOnEventAttribute];
-        wrapper[kListener] = handler2;
+        wrapper[kListener] = handler;
         if (options.once) {
           this.once(type, wrapper);
         } else {
@@ -2098,9 +2098,9 @@ var require_event_target = __commonJS({
        * @param {(Function|Object)} handler The listener to remove
        * @public
        */
-      removeEventListener(type, handler2) {
+      removeEventListener(type, handler) {
         for (const listener of this.listeners(type)) {
-          if (listener[kListener] === handler2 && !listener[kForOnEventAttribute]) {
+          if (listener[kListener] === handler && !listener[kForOnEventAttribute]) {
             this.removeListener(type, listener);
             break;
           }
@@ -2753,15 +2753,15 @@ var require_websocket = __commonJS({
           }
           return null;
         },
-        set(handler2) {
+        set(handler) {
           for (const listener of this.listeners(method)) {
             if (listener[kForOnEventAttribute]) {
               this.removeListener(method, listener);
               break;
             }
           }
-          if (typeof handler2 !== "function") return;
-          this.addEventListener(method, handler2, {
+          if (typeof handler !== "function") return;
+          this.addEventListener(method, handler, {
             [kForOnEventAttribute]: true
           });
         }
@@ -29326,11 +29326,11 @@ var require_operations = __commonJS({
       ].filter(Boolean);
     };
     var KAPPA = 4 * ((Math.sqrt(2) - 1) / 3);
-    exports.drawEllipsePath = function(config3) {
-      var x = objects_1.asNumber(config3.x);
-      var y = objects_1.asNumber(config3.y);
-      var xScale = objects_1.asNumber(config3.xScale);
-      var yScale = objects_1.asNumber(config3.yScale);
+    exports.drawEllipsePath = function(config2) {
+      var x = objects_1.asNumber(config2.x);
+      var y = objects_1.asNumber(config2.y);
+      var xScale = objects_1.asNumber(config2.xScale);
+      var yScale = objects_1.asNumber(config2.yScale);
       x -= xScale;
       y -= yScale;
       var ox = xScale * KAPPA;
@@ -29349,11 +29349,11 @@ var require_operations = __commonJS({
         operators_1.popGraphicsState()
       ];
     };
-    var drawEllipseCurves = function(config3) {
-      var centerX = objects_1.asNumber(config3.x);
-      var centerY = objects_1.asNumber(config3.y);
-      var xScale = objects_1.asNumber(config3.xScale);
-      var yScale = objects_1.asNumber(config3.yScale);
+    var drawEllipseCurves = function(config2) {
+      var centerX = objects_1.asNumber(config2.x);
+      var centerY = objects_1.asNumber(config2.y);
+      var xScale = objects_1.asNumber(config2.xScale);
+      var yScale = objects_1.asNumber(config2.yScale);
       var x = -xScale;
       var y = -yScale;
       var ox = xScale * KAPPA;
@@ -29364,7 +29364,7 @@ var require_operations = __commonJS({
       var ym = y + yScale;
       return [
         operators_1.translate(centerX, centerY),
-        operators_1.rotateRadians(rotations_1.toRadians(config3.rotate)),
+        operators_1.rotateRadians(rotations_1.toRadians(config2.rotate)),
         operators_1.moveTo(x, ym),
         operators_1.appendBezierCurve(x, ym - oy, xm - ox, y, xm, y),
         operators_1.appendBezierCurve(xm + ox, y, xe, ym - oy, xe, ym),
@@ -38771,11 +38771,6 @@ var require_lib2 = __commonJS({
   }
 });
 
-// node_modules/hono/dist/adapter/vercel/handler.js
-var handle = (app2) => (req) => {
-  return app2.fetch(req);
-};
-
 // node_modules/hono/dist/request/constants.js
 var GET_MATCH_RESULT = /* @__PURE__ */ Symbol();
 
@@ -39707,13 +39702,13 @@ var compose = (middleware, onError, onNotFound) => {
       index = i;
       let res;
       let isError = false;
-      let handler2;
+      let handler;
       if (middleware[i]) {
-        handler2 = middleware[i][0][0];
+        handler = middleware[i][0][0];
         context.req.routeIndex = i;
-      } else handler2 = i === middleware.length && next || void 0;
-      if (handler2) try {
-        res = await handler2(context, () => dispatch(i + 1));
+      } else handler = i === middleware.length && next || void 0;
+      if (handler) try {
+        res = await handler(context, () => dispatch(i + 1));
       } catch (err) {
         if (err instanceof Error && onError) {
           context.error = err;
@@ -39779,8 +39774,8 @@ var Hono = class Hono2 {
         const methodName = method.toUpperCase();
         if (typeof args1 === "string") this.#path = args1;
         else this.#addRoute(methodName, this.#path, args1);
-        args.forEach((handler2) => {
-          this.#addRoute(methodName, this.#path, handler2);
+        args.forEach((handler) => {
+          this.#addRoute(methodName, this.#path, handler);
         });
         return this;
       };
@@ -39790,7 +39785,7 @@ var Hono = class Hono2 {
         this.#path = p;
         for (const m of [method].flat()) {
           const methodName = m.toUpperCase();
-          for (const handler2 of handlers) this.#addRoute(methodName, this.#path, handler2);
+          for (const handler of handlers) this.#addRoute(methodName, this.#path, handler);
         }
       }
       return this;
@@ -39801,8 +39796,8 @@ var Hono = class Hono2 {
         this.#path = "*";
         handlers.unshift(arg1);
       }
-      handlers.forEach((handler2) => {
-        this.#addRoute("ALL", this.#path, handler2);
+      handlers.forEach((handler) => {
+        this.#addRoute("ALL", this.#path, handler);
       });
       return this;
     };
@@ -39843,13 +39838,13 @@ var Hono = class Hono2 {
   route(path2, app2) {
     const subApp = this.basePath(path2);
     app2.routes.map((r) => {
-      let handler2;
-      if (app2.errorHandler === errorHandler) handler2 = r.handler;
+      let handler;
+      if (app2.errorHandler === errorHandler) handler = r.handler;
       else {
-        handler2 = async (c, next) => (await compose([], app2.errorHandler)(c, () => r.handler(c, next))).res;
-        handler2[COMPOSED_HANDLER] = r.handler;
+        handler = async (c, next) => (await compose([], app2.errorHandler)(c, () => r.handler(c, next))).res;
+        handler[COMPOSED_HANDLER] = r.handler;
       }
-      subApp.#addRoute(r.method, r.path, handler2, r.basePath);
+      subApp.#addRoute(r.method, r.path, handler, r.basePath);
     });
     return this;
   }
@@ -39887,8 +39882,8 @@ var Hono = class Hono2 {
   * })
   * ```
   */
-  onError = (handler2) => {
-    this.errorHandler = handler2;
+  onError = (handler) => {
+    this.errorHandler = handler;
     return this;
   };
   /**
@@ -39906,8 +39901,8 @@ var Hono = class Hono2 {
   * })
   * ```
   */
-  notFound = (handler2) => {
-    this.#notFoundHandler = handler2;
+  notFound = (handler) => {
+    this.#notFoundHandler = handler;
     return this;
   };
   /**
@@ -39975,23 +39970,23 @@ var Hono = class Hono2 {
         return new Request(url2, request);
       };
     })();
-    const handler2 = async (c, next) => {
+    const handler = async (c, next) => {
       const res = await applicationHandler(replaceRequest(c.req.raw), ...getOptions(c));
       if (res) return res;
       await next();
     };
-    this.#addRoute("ALL", mergePath(path2, "*"), handler2);
+    this.#addRoute("ALL", mergePath(path2, "*"), handler);
     return this;
   }
-  #addRoute(method, path2, handler2, baseRoutePath) {
+  #addRoute(method, path2, handler, baseRoutePath) {
     path2 = mergePath(this._basePath, path2);
     const r = {
       basePath: baseRoutePath !== void 0 ? mergePath(this._basePath, baseRoutePath) : this._basePath,
       path: path2,
       method,
-      handler: handler2
+      handler
     };
-    this.router.add(method, path2, [handler2, r]);
+    this.router.add(method, path2, [handler, r]);
     this.routes.push(r);
   }
   #handleError(err, c) {
@@ -40277,7 +40272,7 @@ var RegExpRouter = class {
       throw e === PATH_ERROR ? new UnsupportedPathError(path2) : e;
     }
   }
-  add(method, path2, handler2) {
+  add(method, path2, handler) {
     const middleware = this.#middleware;
     const routes = this.#routes;
     if (!middleware) throw new Error(MESSAGE_MATCHER_IS_ALREADY_BUILT);
@@ -40299,7 +40294,7 @@ var RegExpRouter = class {
         this.#insertPath(m, path2);
         middleware[m][path2] = findMiddleware(middleware[m], path2) || findMiddleware(middleware["ALL"], path2) || [];
       }
-      for (const handlerMap of [middleware, routes]) for (const m of methods) for (const p in handlerMap[m]) re.test(p) && handlerMap[m][p].push([handler2, path2]);
+      for (const handlerMap of [middleware, routes]) for (const m of methods) for (const p in handlerMap[m]) re.test(p) && handlerMap[m][p].push([handler, path2]);
       return;
     }
     const paths = checkOptionalParameter(path2) || [path2];
@@ -40308,7 +40303,7 @@ var RegExpRouter = class {
         this.#insertPath(m, path3);
         routes[m][path3] = findMiddleware(middleware[m], path3) || findMiddleware(middleware["ALL"], path3) || [];
       }
-      routes[m][path3].push([handler2, path3]);
+      routes[m][path3].push([handler, path3]);
     }
   }
   match = match;
@@ -40354,12 +40349,12 @@ var SmartRouter = class {
   constructor(init) {
     this.#routers = init.routers;
   }
-  add(method, path2, handler2) {
+  add(method, path2, handler) {
     if (!this.#routes) throw new Error(MESSAGE_MATCHER_IS_ALREADY_BUILT);
     this.#routes.push([
       method,
       path2,
-      handler2
+      handler
     ]);
   }
   match(method, path2) {
@@ -40402,7 +40397,7 @@ var Node3 = class Node4 {
   #patterns = [];
   #pattern;
   #params = emptyParams;
-  insert(method, path2, handler2) {
+  insert(method, path2, handler) {
     let curNode = this;
     const parts = splitRoutingPath(path2);
     const possibleKeys = /* @__PURE__ */ new Set();
@@ -40421,7 +40416,7 @@ var Node3 = class Node4 {
       if (isParam) possibleKeys.add(pattern[1]);
     }
     curNode.#methods.push({ [method]: {
-      handler: handler2,
+      handler,
       possibleKeys: [...possibleKeys],
       score: ++order
     } });
@@ -40519,7 +40514,7 @@ var Node3 = class Node4 {
     if (handlerSets[1]) handlerSets.sort((a, b) => {
       return a.score - b.score;
     });
-    return [handlerSets.map(({ handler: handler2, params }) => [handler2, params])];
+    return [handlerSets.map(({ handler, params }) => [handler, params])];
   }
 };
 
@@ -40527,8 +40522,8 @@ var Node3 = class Node4 {
 var TrieRouter = class {
   name = "TrieRouter";
   #node = new Node3();
-  add(method, path2, handler2) {
-    for (const result of checkOptionalParameter(path2) || [path2]) this.#node.insert(method, result, handler2);
+  add(method, path2, handler) {
+    for (const result of checkOptionalParameter(path2) || [path2]) this.#node.insert(method, result, handler);
   }
   match(method, path2) {
     return this.#node.search(method, path2);
@@ -41014,11 +41009,11 @@ function valueToJson(value) {
 
 // node_modules/@libsql/core/lib-esm/config.js
 var inMemoryMode = ":memory:";
-function expandConfig(config3, preferHttp) {
-  if (typeof config3 !== "object") {
-    throw new TypeError(`Expected client configuration as object, got ${typeof config3}`);
+function expandConfig(config2, preferHttp) {
+  if (typeof config2 !== "object") {
+    throw new TypeError(`Expected client configuration as object, got ${typeof config2}`);
   }
-  let { url: url2, authToken, tls, intMode, concurrency } = config3;
+  let { url: url2, authToken, tls, intMode, concurrency } = config2;
   concurrency = Math.max(0, concurrency || 20);
   intMode ??= "number";
   let connectionQueryParams = [];
@@ -41095,12 +41090,12 @@ function expandConfig(config3, preferHttp) {
       path: path2,
       intMode,
       concurrency,
-      syncUrl: config3.syncUrl,
-      syncInterval: config3.syncInterval,
-      readYourWrites: config3.readYourWrites,
-      offline: config3.offline,
-      fetch: config3.fetch,
-      timeout: config3.timeout,
+      syncUrl: config2.syncUrl,
+      syncInterval: config2.syncInterval,
+      readYourWrites: config2.readYourWrites,
+      offline: config2.offline,
+      fetch: config2.fetch,
+      timeout: config2.timeout,
       authToken: void 0,
       encryptionKey: void 0,
       remoteEncryptionKey: void 0,
@@ -41115,14 +41110,14 @@ function expandConfig(config3, preferHttp) {
     authToken,
     intMode,
     concurrency,
-    encryptionKey: config3.encryptionKey,
-    remoteEncryptionKey: config3.remoteEncryptionKey,
-    syncUrl: config3.syncUrl,
-    syncInterval: config3.syncInterval,
-    readYourWrites: config3.readYourWrites,
-    offline: config3.offline,
-    fetch: config3.fetch,
-    timeout: config3.timeout
+    encryptionKey: config2.encryptionKey,
+    remoteEncryptionKey: config2.remoteEncryptionKey,
+    syncUrl: config2.syncUrl,
+    syncInterval: config2.syncInterval,
+    readYourWrites: config2.readYourWrites,
+    offline: config2.offline,
+    fetch: config2.fetch,
+    timeout: config2.timeout
   };
 }
 
@@ -44843,31 +44838,31 @@ var Lru = class {
 
 // node_modules/@libsql/client/lib-esm/ws.js
 var import_promise_limit = __toESM(require_promise_limit(), 1);
-function _createClient(config3) {
-  if (config3.scheme !== "wss" && config3.scheme !== "ws") {
-    throw new LibsqlError(`The WebSocket client supports only "libsql:", "wss:" and "ws:" URLs, got ${JSON.stringify(config3.scheme + ":")}. For more information, please read ${supportedUrlLink}`, "URL_SCHEME_NOT_SUPPORTED");
+function _createClient(config2) {
+  if (config2.scheme !== "wss" && config2.scheme !== "ws") {
+    throw new LibsqlError(`The WebSocket client supports only "libsql:", "wss:" and "ws:" URLs, got ${JSON.stringify(config2.scheme + ":")}. For more information, please read ${supportedUrlLink}`, "URL_SCHEME_NOT_SUPPORTED");
   }
-  if (config3.encryptionKey !== void 0) {
+  if (config2.encryptionKey !== void 0) {
     throw new LibsqlError("Encryption key is not supported by the remote client.", "ENCRYPTION_KEY_NOT_SUPPORTED");
   }
-  if (config3.scheme === "ws" && config3.tls) {
+  if (config2.scheme === "ws" && config2.tls) {
     throw new LibsqlError(`A "ws:" URL cannot opt into TLS by using ?tls=1`, "URL_INVALID");
-  } else if (config3.scheme === "wss" && !config3.tls) {
+  } else if (config2.scheme === "wss" && !config2.tls) {
     throw new LibsqlError(`A "wss:" URL cannot opt out of TLS by using ?tls=0`, "URL_INVALID");
   }
-  const url2 = encodeBaseUrl(config3.scheme, config3.authority, config3.path);
+  const url2 = encodeBaseUrl(config2.scheme, config2.authority, config2.path);
   let client2;
   try {
-    client2 = openWs(url2, config3.authToken);
+    client2 = openWs(url2, config2.authToken);
   } catch (e) {
     if (e instanceof WebSocketUnsupportedError) {
-      const suggestedScheme = config3.scheme === "wss" ? "https" : "http";
-      const suggestedUrl = encodeBaseUrl(suggestedScheme, config3.authority, config3.path);
+      const suggestedScheme = config2.scheme === "wss" ? "https" : "http";
+      const suggestedUrl = encodeBaseUrl(suggestedScheme, config2.authority, config2.path);
       throw new LibsqlError(`This environment does not support WebSockets, please switch to the HTTP client by using a "${suggestedScheme}:" URL (${JSON.stringify(suggestedUrl)}). For more information, please read ${supportedUrlLink}`, "WEBSOCKETS_NOT_SUPPORTED");
     }
     throw mapHranaError(e);
   }
-  return new WsClient2(client2, url2, config3.authToken, config3.intMode, config3.concurrency);
+  return new WsClient2(client2, url2, config2.authToken, config2.intMode, config2.concurrency);
 }
 var maxConnAgeMillis = 60 * 1e3;
 var sqlCacheCapacity = 100;
@@ -45136,20 +45131,20 @@ var WsTransaction = class extends HranaTransaction {
 
 // node_modules/@libsql/client/lib-esm/http.js
 var import_promise_limit2 = __toESM(require_promise_limit(), 1);
-function _createClient2(config3) {
-  if (config3.scheme !== "https" && config3.scheme !== "http") {
-    throw new LibsqlError(`The HTTP client supports only "libsql:", "https:" and "http:" URLs, got ${JSON.stringify(config3.scheme + ":")}. For more information, please read ${supportedUrlLink}`, "URL_SCHEME_NOT_SUPPORTED");
+function _createClient2(config2) {
+  if (config2.scheme !== "https" && config2.scheme !== "http") {
+    throw new LibsqlError(`The HTTP client supports only "libsql:", "https:" and "http:" URLs, got ${JSON.stringify(config2.scheme + ":")}. For more information, please read ${supportedUrlLink}`, "URL_SCHEME_NOT_SUPPORTED");
   }
-  if (config3.encryptionKey !== void 0) {
+  if (config2.encryptionKey !== void 0) {
     throw new LibsqlError("Encryption key is not supported by the remote client.", "ENCRYPTION_KEY_NOT_SUPPORTED");
   }
-  if (config3.scheme === "http" && config3.tls) {
+  if (config2.scheme === "http" && config2.tls) {
     throw new LibsqlError(`A "http:" URL cannot opt into TLS by using ?tls=1`, "URL_INVALID");
-  } else if (config3.scheme === "https" && !config3.tls) {
+  } else if (config2.scheme === "https" && !config2.tls) {
     throw new LibsqlError(`A "https:" URL cannot opt out of TLS by using ?tls=0`, "URL_INVALID");
   }
-  const url2 = encodeBaseUrl(config3.scheme, config3.authority, config3.path);
-  return new HttpClient2(url2, config3.authToken, config3.intMode, config3.fetch, config3.concurrency, config3.remoteEncryptionKey);
+  const url2 = encodeBaseUrl(config2.scheme, config2.authority, config2.path);
+  return new HttpClient2(url2, config2.authToken, config2.intMode, config2.fetch, config2.concurrency, config2.remoteEncryptionKey);
 }
 var sqlCacheCapacity2 = 30;
 var HttpClient2 = class {
@@ -45328,16 +45323,16 @@ var HttpTransaction = class extends HranaTransaction {
 };
 
 // node_modules/@libsql/client/lib-esm/web.js
-function createClient(config3) {
-  return _createClient3(expandConfig(config3, true));
+function createClient(config2) {
+  return _createClient3(expandConfig(config2, true));
 }
-function _createClient3(config3) {
-  if (config3.scheme === "ws" || config3.scheme === "wss") {
-    return _createClient(config3);
-  } else if (config3.scheme === "http" || config3.scheme === "https") {
-    return _createClient2(config3);
+function _createClient3(config2) {
+  if (config2.scheme === "ws" || config2.scheme === "wss") {
+    return _createClient(config2);
+  } else if (config2.scheme === "http" || config2.scheme === "https") {
+    return _createClient2(config2);
   } else {
-    throw new LibsqlError(`The client that uses Web standard APIs supports only "libsql:", "wss:", "ws:", "https:" and "http:" URLs, got ${JSON.stringify(config3.scheme + ":")}. For more information, please read ${supportedUrlLink}`, "URL_SCHEME_NOT_SUPPORTED");
+    throw new LibsqlError(`The client that uses Web standard APIs supports only "libsql:", "wss:", "ws:", "https:" and "http:" URLs, got ${JSON.stringify(config2.scheme + ":")}. For more information, please read ${supportedUrlLink}`, "URL_SCHEME_NOT_SUPPORTED");
   }
 }
 
@@ -47958,7 +47953,7 @@ function attachSchema(issues, start, inst) {
     (_a3 = issues[i]).schema ?? (_a3.schema = inst);
   }
 }
-function finalizeIssue(iss, ctx, config3) {
+function finalizeIssue(iss, ctx, config2) {
   var _a3;
   const traits = iss.inst?._zod?.traits;
   if (traits?.has("$ZodType")) {
@@ -47968,7 +47963,7 @@ function finalizeIssue(iss, ctx, config3) {
       iss.schema = iss.inst;
   }
   const schemaError = iss.schema !== iss.inst ? iss.schema?._zod.def?.error : void 0;
-  const message = iss.message ? iss.message : unwrapMessage(iss.inst?._zod.def?.error?.(iss)) ?? unwrapMessage(schemaError?.(iss)) ?? unwrapMessage(ctx?.error?.(iss)) ?? unwrapMessage(config3.customError?.(iss)) ?? unwrapMessage(config3.localeError?.(iss)) ?? "Invalid input";
+  const message = iss.message ? iss.message : unwrapMessage(iss.inst?._zod.def?.error?.(iss)) ?? unwrapMessage(schemaError?.(iss)) ?? unwrapMessage(ctx?.error?.(iss)) ?? unwrapMessage(config2.customError?.(iss)) ?? unwrapMessage(config2.localeError?.(iss)) ?? "Invalid input";
   const full = {};
   for (const k of Object.keys(iss)) {
     if (k === "inst" || k === "schema" || k === "continue" || k === "input" || k === "__proto__")
@@ -67168,23 +67163,8 @@ app.get("/api/verify/certificate/:code", async (c) => {
 var app_default = app;
 
 // src/server/serverlessEntry.ts
-var config2 = { runtime: "nodejs" };
-var handler = handle(app_default);
-var GET = handler;
-var POST = handler;
-var PUT = handler;
-var PATCH = handler;
-var DELETE = handler;
-var OPTIONS = handler;
-var serverlessEntry_default = handler;
+var serverlessEntry_default = app_default;
 export {
-  DELETE,
-  GET,
-  OPTIONS,
-  PATCH,
-  POST,
-  PUT,
-  config2 as config,
   serverlessEntry_default as default
 };
 /*! Bundled license information:
