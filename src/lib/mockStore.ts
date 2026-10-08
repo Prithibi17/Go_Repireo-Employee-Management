@@ -99,7 +99,7 @@ export const mockStore: StorageState = globalForMock.mockStore || {
   people: [
     {
       id: 'p-1',
-      person_code: 'GR-INT-0001',
+      person_code: 'GRI-5M8K2P7',
       person_type: 'INTERN',
       full_name: 'Aarav Sharma',
       display_name: 'Aarav',
@@ -127,7 +127,7 @@ export const mockStore: StorageState = globalForMock.mockStore || {
     },
     {
       id: 'p-2',
-      person_code: 'GR-INT-0002',
+      person_code: 'GRI-8W3N9L1',
       person_type: 'INTERN',
       full_name: 'Pooja Bannerjee',
       display_name: 'Pooja',
@@ -155,7 +155,7 @@ export const mockStore: StorageState = globalForMock.mockStore || {
     },
     {
       id: 'p-3',
-      person_code: 'GR-EMP-0001',
+      person_code: 'GRE-7K4M2P9',
       person_type: 'EMPLOYEE',
       full_name: 'Prithibi Mandi',
       display_name: 'Prithibi',
@@ -220,13 +220,13 @@ export const mockStore: StorageState = globalForMock.mockStore || {
     {
       id: 'idc-1',
       person_id: 'p-1',
-      card_number: 'IDC-GR-INT-0001-v1',
+      card_number: 'IDC-5M8K2P7',
       issued_at: '2026-07-02T10:00:00Z',
       valid_from: '2026-07-02',
       valid_until: '2027-07-02',
       status: 'ACTIVE',
       verification_token_id: 'tok-idc-1',
-      public_verification_code: 'id_v_DEMO_AARAV_0001',
+      public_verification_code: 'id_v_DEMO_AARAV_5M8K2P7',
       template_version: 1,
       issued_by: 'owner-profile-1',
       created_at: '2026-07-02T10:00:00Z',
@@ -236,7 +236,7 @@ export const mockStore: StorageState = globalForMock.mockStore || {
   tokens: [
     {
       id: 'tok-idc-1',
-      token_hash: hashToken('id_v_DEMO_AARAV_0001'),
+      token_hash: hashToken('id_v_DEMO_AARAV_5M8K2P7'),
       resource_type: 'ID_CARD',
       resource_id: 'idc-1',
       status: 'ACTIVE',
@@ -251,7 +251,7 @@ export const mockStore: StorageState = globalForMock.mockStore || {
       action: 'PERSON_CREATED',
       entity_type: 'PERSON',
       entity_id: 'p-1',
-      metadata: { code: 'GR-INT-0001', name: 'Aarav Sharma' },
+      metadata: { code: 'GRI-5M8K2P7', name: 'Aarav Sharma' },
       created_at: '2026-07-01T10:00:00Z',
     },
     {
@@ -261,7 +261,7 @@ export const mockStore: StorageState = globalForMock.mockStore || {
       action: 'ID_ISSUED',
       entity_type: 'ID_CARD',
       entity_id: 'idc-1',
-      metadata: { code: 'IDC-GR-INT-0001-v1' },
+      metadata: { code: 'IDC-5M8K2P7' },
       created_at: '2026-07-02T10:00:00Z',
     }
   ],

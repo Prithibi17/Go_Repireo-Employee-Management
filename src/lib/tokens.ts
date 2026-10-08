@@ -19,14 +19,28 @@ export function hashToken(token: string): string {
 /**
  * Generates cryptographically secure uppercase alphanumeric string.
  * Uses A-Z and 0-9 (36 characters).
+ * Guarantees a genuine mixture of both letters and digits (at least 2 of each).
  */
 export function generateCryptoAlphanumeric(length: number = 7): string {
   const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    const randomIndex = crypto.randomInt(0, chars.length);
-    result += chars[randomIndex];
+  while (true) {
+    let result = '';
+    let letterCount = 0;
+    let digitCount = 0;
+    for (let i = 0; i < length; i++) {
+      const randomIndex = crypto.randomInt(0, chars.length);
+      const char = chars[randomIndex];
+      result += char;
+      if (char >= '0' && char <= '9') {
+        digitCount++;
+      } else {
+        letterCount++;
+      }
+    }
+    // Guarantee that the generated sequence is a genuine mixture of letters and digits
+    if (letterCount >= 2 && digitCount >= 2) {
+      return result;
+    }
   }
-  return result;
 }
 

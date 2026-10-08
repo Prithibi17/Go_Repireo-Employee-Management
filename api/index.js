@@ -46774,12 +46774,24 @@ function hashToken(token) {
 }
 function generateCryptoAlphanumeric(length = 7) {
   const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    const randomIndex = crypto2.randomInt(0, chars.length);
-    result += chars[randomIndex];
+  while (true) {
+    let result = "";
+    let letterCount = 0;
+    let digitCount = 0;
+    for (let i = 0; i < length; i++) {
+      const randomIndex = crypto2.randomInt(0, chars.length);
+      const char = chars[randomIndex];
+      result += char;
+      if (char >= "0" && char <= "9") {
+        digitCount++;
+      } else {
+        letterCount++;
+      }
+    }
+    if (letterCount >= 2 && digitCount >= 2) {
+      return result;
+    }
   }
-  return result;
 }
 
 // src/services/dataService.ts
@@ -46787,6 +46799,32 @@ var initialized = false;
 async function ensureDb() {
   if (!initialized) {
     await initTursoSchema();
+    try {
+      const db = getTursoClient();
+      const legacyPeople = await db.execute("SELECT id, person_code, person_type FROM people WHERE person_code LIKE 'GR-%'");
+      for (const p of legacyPeople.rows) {
+        const prefix = p.person_type === "EMPLOYEE" ? "GRE-" : "GRI-";
+        const newCode = `${prefix}${generateCryptoAlphanumeric(7)}`;
+        await db.execute({
+          sql: "UPDATE people SET person_code = ? WHERE id = ?",
+          args: [newCode, String(p.id)]
+        });
+        await db.execute({
+          sql: "UPDATE certificates SET person_code_snapshot = ? WHERE person_code_snapshot = ?",
+          args: [newCode, String(p.person_code)]
+        });
+      }
+      const legacyCards = await db.execute("SELECT id, card_number FROM id_cards WHERE card_number LIKE 'IDC-GR-%'");
+      for (const c of legacyCards.rows) {
+        const newCardNumber = `IDC-${generateCryptoAlphanumeric(7)}`;
+        await db.execute({
+          sql: "UPDATE id_cards SET card_number = ? WHERE id = ?",
+          args: [newCardNumber, String(c.id)]
+        });
+      }
+    } catch (e) {
+      console.warn("Auto-migration notice:", e);
+    }
     initialized = true;
   }
 }
