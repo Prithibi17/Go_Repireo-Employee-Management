@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build:client": "vite build",
-    "build:server": "esbuild src/server/serverlessEntry.ts --bundle --platform=node --format=esm --outfile=api/index.js",
-    "build": "vite build && esbuild src/server/serverlessEntry.ts --bundle --platform=node --format=esm --outfile=api/index.js",
+    "build:server": "esbuild src/server/serverlessEntry.ts --bundle --platform=node --format=esm --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" --outfile=api/index.js",
+    "build": "vite build && esbuild src/server/serverlessEntry.ts --bundle --platform=node --format=esm --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" --outfile=api/index.js",
     "preview": "vite preview"
   },
   "dependencies": {
