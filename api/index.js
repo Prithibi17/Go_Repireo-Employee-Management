@@ -47390,17 +47390,17 @@ var DataService = {
         (data.personal_email !== void 0 ? data.personal_email : existing.personal_email) ?? null,
         (data.company_email !== void 0 ? data.company_email : existing.company_email) ?? null,
         (data.phone !== void 0 ? data.phone : existing.phone) ?? null,
-        (data.date_of_birth !== void 0 ? data.date_of_birth : existing.date_of_birth) ?? null,
+        (data.date_of_birth ? data.date_of_birth : data.date_of_birth === "" ? null : existing.date_of_birth) ?? null,
         (data.gender !== void 0 ? data.gender : existing.gender) ?? null,
         (data.address_line !== void 0 ? data.address_line : existing.address_line) ?? null,
         (data.city !== void 0 ? data.city : existing.city) ?? null,
         (data.state !== void 0 ? data.state : existing.state) ?? null,
         (data.postal_code !== void 0 ? data.postal_code : existing.postal_code) ?? null,
         (data.country !== void 0 ? data.country : existing.country) ?? null,
-        (data.department_id !== void 0 ? data.department_id : existing.department_id) ?? null,
+        (data.department_id ? data.department_id : data.department_id === "" ? null : existing.department_id) ?? null,
         (data.designation !== void 0 ? data.designation : existing.designation) ?? null,
         (data.joining_date !== void 0 ? data.joining_date : existing.joining_date) ?? null,
-        (data.reporting_manager_id !== void 0 ? data.reporting_manager_id : existing.reporting_manager_id) ?? null,
+        (data.reporting_manager_id ? data.reporting_manager_id : data.reporting_manager_id === "" ? null : existing.reporting_manager_id) ?? null,
         (data.work_location !== void 0 ? data.work_location : existing.work_location) ?? null,
         (data.employment_type !== void 0 ? data.employment_type : existing.employment_type) ?? null,
         (data.emergency_contact_name !== void 0 ? data.emergency_contact_name : existing.emergency_contact_name) ?? null,
@@ -47410,37 +47410,64 @@ var DataService = {
         id
       ]
     });
-    if (existing.person_type === "INTERN" && existing.internships && existing.internships.length > 0) {
-      const activeInt = existing.internships[0];
-      await db.execute({
-        sql: `UPDATE internships SET
-          college_name = ?,
-          course = ?,
-          specialization = ?,
-          domain = COALESCE(?, domain),
-          internship_title = COALESCE(?, internship_title),
-          project_name = ?,
-          start_date = COALESCE(?, start_date),
-          end_date = COALESCE(?, end_date),
-          mode = COALESCE(?, mode),
-          stipend = ?,
-          updated_at = ?
-        WHERE id = ?`,
-        args: [
-          (data.college_name !== void 0 ? data.college_name : activeInt.college_name) ?? null,
-          (data.course !== void 0 ? data.course : activeInt.course) ?? null,
-          (data.specialization !== void 0 ? data.specialization : activeInt.specialization) ?? null,
-          (data.domain !== void 0 ? data.domain : activeInt.domain) ?? null,
-          (data.internship_title !== void 0 ? data.internship_title : activeInt.internship_title) ?? null,
-          (data.project_name !== void 0 ? data.project_name : activeInt.project_name) ?? null,
-          (data.internship_start_date !== void 0 ? data.internship_start_date : activeInt.start_date) ?? null,
-          (data.internship_end_date !== void 0 ? data.internship_end_date : activeInt.end_date) ?? null,
-          (data.internship_mode !== void 0 ? data.internship_mode : activeInt.mode) ?? null,
-          (data.stipend !== void 0 ? data.stipend : activeInt.stipend) ?? null,
-          now,
-          activeInt.id
-        ]
-      });
+    if (existing.person_type === "INTERN") {
+      if (existing.internships && existing.internships.length > 0) {
+        const activeInt = existing.internships[0];
+        await db.execute({
+          sql: `UPDATE internships SET
+            college_name = ?,
+            course = ?,
+            specialization = ?,
+            domain = COALESCE(?, domain),
+            internship_title = COALESCE(?, internship_title),
+            project_name = ?,
+            start_date = COALESCE(?, start_date),
+            end_date = COALESCE(?, end_date),
+            mode = COALESCE(?, mode),
+            stipend = ?,
+            updated_at = ?
+          WHERE id = ?`,
+          args: [
+            (data.college_name !== void 0 ? data.college_name : activeInt.college_name) ?? null,
+            (data.course !== void 0 ? data.course : activeInt.course) ?? null,
+            (data.specialization !== void 0 ? data.specialization : activeInt.specialization) ?? null,
+            (data.domain !== void 0 ? data.domain : activeInt.domain) ?? null,
+            (data.internship_title !== void 0 ? data.internship_title : activeInt.internship_title) ?? null,
+            (data.project_name !== void 0 ? data.project_name : activeInt.project_name) ?? null,
+            (data.internship_start_date !== void 0 ? data.internship_start_date : activeInt.start_date) ?? null,
+            (data.internship_end_date !== void 0 ? data.internship_end_date : activeInt.end_date) ?? null,
+            (data.internship_mode !== void 0 ? data.internship_mode : activeInt.mode) ?? null,
+            (data.stipend !== void 0 ? data.stipend : activeInt.stipend) ?? null,
+            now,
+            activeInt.id
+          ]
+        });
+      } else {
+        const intId = `int-${Date.now()}`;
+        await db.execute({
+          sql: `INSERT INTO internships (
+            id, person_id, college_name, course, specialization, domain,
+            internship_title, project_name, start_date, end_date, mode, stipend,
+            status, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)`,
+          args: [
+            intId,
+            id,
+            data.college_name || null,
+            data.course || null,
+            data.specialization || null,
+            data.domain || "Software Engineering",
+            data.internship_title || data.designation || "Intern",
+            data.project_name || null,
+            data.internship_start_date || existing.joining_date,
+            data.internship_end_date || new Date(Date.now() + 90 * 864e5).toISOString().split("T")[0],
+            data.internship_mode || "Remote",
+            data.stipend || null,
+            now,
+            now
+          ]
+        });
+      }
     }
     await this.logActivity(actor, "PERSON_UPDATED", "PERSON", id, {
       code: existing.person_code,
@@ -68465,7 +68492,7 @@ app.get("/api/people/:id", async (c) => {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
-app.put("/api/people/:id", async (c) => {
+var handleUpdatePerson = async (c) => {
   try {
     const id = c.req.param("id");
     const currentUser = await getCurrentUser(c);
@@ -68481,7 +68508,9 @@ app.put("/api/people/:id", async (c) => {
   } catch (err) {
     return c.json({ success: false, error: err.message || "Failed to update person" }, 400);
   }
-});
+};
+app.put("/api/people/:id", handleUpdatePerson);
+app.patch("/api/people/:id", handleUpdatePerson);
 app.post("/api/people/:id/archive", async (c) => {
   try {
     const id = c.req.param("id");

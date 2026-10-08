@@ -131,7 +131,7 @@ app.get('/api/people/:id', async (c) => {
   }
 });
 
-app.put('/api/people/:id', async (c) => {
+const handleUpdatePerson = async (c: any) => {
   try {
     const id = c.req.param('id');
     const currentUser = await getCurrentUser(c);
@@ -149,7 +149,10 @@ app.put('/api/people/:id', async (c) => {
   } catch (err: any) {
     return c.json({ success: false, error: err.message || 'Failed to update person' }, 400);
   }
-});
+};
+
+app.put('/api/people/:id', handleUpdatePerson);
+app.patch('/api/people/:id', handleUpdatePerson);
 
 app.post('/api/people/:id/archive', async (c) => {
   try {

@@ -95,11 +95,11 @@ export function PersonForm({ departments, managers, initialData, personId }: Per
           }),
         });
 
-        const result = await res.json();
-        if (result.success && result.person?.id) {
+        const result = await res.json().catch(() => ({}));
+        if (res.ok && result.success && result.person?.id) {
           navigate(`/people/${result.person.id}`);
         } else {
-          setError(result.error || 'Failed to update person record');
+          setError(result.error || `Failed to update person record (HTTP ${res.status})`);
         }
       } else {
         const res = await fetch('/api/people', {
@@ -112,15 +112,15 @@ export function PersonForm({ departments, managers, initialData, personId }: Per
           }),
         });
 
-        const result = await res.json();
-        if (result.success && result.person?.id) {
+        const result = await res.json().catch(() => ({}));
+        if (res.ok && result.success && result.person?.id) {
           navigate(`/people/${result.person.id}`);
         } else {
-          setError(result.error || 'Failed to create person record');
+          setError(result.error || `Failed to create person record (HTTP ${res.status})`);
         }
       }
-    } catch {
-      setError('An unexpected error occurred while saving the record.');
+    } catch (err: any) {
+      setError(err?.message || 'An unexpected error occurred while saving the record.');
     } finally {
       setLoading(false);
     }

@@ -664,17 +664,17 @@ export const DataService = {
         (data.personal_email !== undefined ? data.personal_email : existing.personal_email) ?? null,
         (data.company_email !== undefined ? data.company_email : existing.company_email) ?? null,
         (data.phone !== undefined ? data.phone : existing.phone) ?? null,
-        (data.date_of_birth !== undefined ? data.date_of_birth : existing.date_of_birth) ?? null,
+        (data.date_of_birth ? data.date_of_birth : (data.date_of_birth === '' ? null : existing.date_of_birth)) ?? null,
         (data.gender !== undefined ? data.gender : existing.gender) ?? null,
         (data.address_line !== undefined ? data.address_line : existing.address_line) ?? null,
         (data.city !== undefined ? data.city : existing.city) ?? null,
         (data.state !== undefined ? data.state : existing.state) ?? null,
         (data.postal_code !== undefined ? data.postal_code : existing.postal_code) ?? null,
         (data.country !== undefined ? data.country : existing.country) ?? null,
-        (data.department_id !== undefined ? data.department_id : existing.department_id) ?? null,
+        (data.department_id ? data.department_id : (data.department_id === '' ? null : existing.department_id)) ?? null,
         (data.designation !== undefined ? data.designation : existing.designation) ?? null,
         (data.joining_date !== undefined ? data.joining_date : existing.joining_date) ?? null,
-        (data.reporting_manager_id !== undefined ? data.reporting_manager_id : existing.reporting_manager_id) ?? null,
+        (data.reporting_manager_id ? data.reporting_manager_id : (data.reporting_manager_id === '' ? null : existing.reporting_manager_id)) ?? null,
         (data.work_location !== undefined ? data.work_location : existing.work_location) ?? null,
         (data.employment_type !== undefined ? data.employment_type : existing.employment_type) ?? null,
         (data.emergency_contact_name !== undefined ? data.emergency_contact_name : existing.emergency_contact_name) ?? null,
@@ -686,37 +686,64 @@ export const DataService = {
     });
 
     // Update active internship details if this person has an internship
-    if (existing.person_type === 'INTERN' && existing.internships && existing.internships.length > 0) {
-      const activeInt = existing.internships[0];
-      await db.execute({
-        sql: `UPDATE internships SET
-          college_name = ?,
-          course = ?,
-          specialization = ?,
-          domain = COALESCE(?, domain),
-          internship_title = COALESCE(?, internship_title),
-          project_name = ?,
-          start_date = COALESCE(?, start_date),
-          end_date = COALESCE(?, end_date),
-          mode = COALESCE(?, mode),
-          stipend = ?,
-          updated_at = ?
-        WHERE id = ?`,
-        args: [
-          (data.college_name !== undefined ? data.college_name : activeInt.college_name) ?? null,
-          (data.course !== undefined ? data.course : activeInt.course) ?? null,
-          (data.specialization !== undefined ? data.specialization : activeInt.specialization) ?? null,
-          (data.domain !== undefined ? data.domain : activeInt.domain) ?? null,
-          (data.internship_title !== undefined ? data.internship_title : activeInt.internship_title) ?? null,
-          (data.project_name !== undefined ? data.project_name : activeInt.project_name) ?? null,
-          (data.internship_start_date !== undefined ? data.internship_start_date : activeInt.start_date) ?? null,
-          (data.internship_end_date !== undefined ? data.internship_end_date : activeInt.end_date) ?? null,
-          (data.internship_mode !== undefined ? data.internship_mode : activeInt.mode) ?? null,
-          (data.stipend !== undefined ? data.stipend : activeInt.stipend) ?? null,
-          now,
-          activeInt.id,
-        ] as any,
-      });
+    if (existing.person_type === 'INTERN') {
+      if (existing.internships && existing.internships.length > 0) {
+        const activeInt = existing.internships[0];
+        await db.execute({
+          sql: `UPDATE internships SET
+            college_name = ?,
+            course = ?,
+            specialization = ?,
+            domain = COALESCE(?, domain),
+            internship_title = COALESCE(?, internship_title),
+            project_name = ?,
+            start_date = COALESCE(?, start_date),
+            end_date = COALESCE(?, end_date),
+            mode = COALESCE(?, mode),
+            stipend = ?,
+            updated_at = ?
+          WHERE id = ?`,
+          args: [
+            (data.college_name !== undefined ? data.college_name : activeInt.college_name) ?? null,
+            (data.course !== undefined ? data.course : activeInt.course) ?? null,
+            (data.specialization !== undefined ? data.specialization : activeInt.specialization) ?? null,
+            (data.domain !== undefined ? data.domain : activeInt.domain) ?? null,
+            (data.internship_title !== undefined ? data.internship_title : activeInt.internship_title) ?? null,
+            (data.project_name !== undefined ? data.project_name : activeInt.project_name) ?? null,
+            (data.internship_start_date !== undefined ? data.internship_start_date : activeInt.start_date) ?? null,
+            (data.internship_end_date !== undefined ? data.internship_end_date : activeInt.end_date) ?? null,
+            (data.internship_mode !== undefined ? data.internship_mode : activeInt.mode) ?? null,
+            (data.stipend !== undefined ? data.stipend : activeInt.stipend) ?? null,
+            now,
+            activeInt.id,
+          ] as any,
+        });
+      } else {
+        const intId = `int-${Date.now()}`;
+        await db.execute({
+          sql: `INSERT INTO internships (
+            id, person_id, college_name, course, specialization, domain,
+            internship_title, project_name, start_date, end_date, mode, stipend,
+            status, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)`,
+          args: [
+            intId,
+            id,
+            data.college_name || null,
+            data.course || null,
+            data.specialization || null,
+            data.domain || 'Software Engineering',
+            data.internship_title || data.designation || 'Intern',
+            data.project_name || null,
+            data.internship_start_date || existing.joining_date,
+            data.internship_end_date || new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+            data.internship_mode || 'Remote',
+            data.stipend || null,
+            now,
+            now,
+          ] as any,
+        });
+      }
     }
 
     await this.logActivity(actor, 'PERSON_UPDATED' as any, 'PERSON', id, {
