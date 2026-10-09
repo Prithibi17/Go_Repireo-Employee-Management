@@ -3,17 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock, Mail, Shield, ScanFace, KeyRound, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { FaceLoginScanner } from '@/components/auth/FaceLoginScanner';
-import { FaceEnrollModal } from '@/components/auth/FaceEnrollModal';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
-  const [authMode, setAuthMode] = useState<'face' | 'password'>('face');
-  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'password' | 'face'>('password');
 
   // Password Login State
-  const [email, setEmail] = useState('owner@gorepireo.in');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -107,7 +105,6 @@ export function LoginPage() {
             <FaceLoginScanner
               onLoginSuccess={handleFaceLoginSuccess}
               onSwitchToPassword={() => setAuthMode('password')}
-              onOpenEnrollModal={() => setIsEnrollModalOpen(true)}
             />
           ) : (
             /* Mode 2: Password Authentication */
@@ -148,6 +145,7 @@ export function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
                     className="w-full pl-9 pr-3 py-2 text-[13px] bg-zinc-900/60 border border-zinc-800 rounded-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition"
                   />
                 </div>
@@ -156,7 +154,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 py-2 px-4 rounded-lg text-[13px] font-medium text-zinc-950 bg-white hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:ring-white transition flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
+                className="w-full mt-2 py-2.5 px-4 rounded-lg text-[13px] font-medium text-zinc-950 bg-white hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:ring-white transition flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
               >
                 {loading ? (
                   'Signing in...'
@@ -167,34 +165,6 @@ export function LoginPage() {
                   </>
                 )}
               </button>
-
-              <div className="pt-2 border-t border-zinc-800/60 mt-3">
-                <p className="text-[11px] text-zinc-500 mb-2 font-medium">Quick Select Account:</p>
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('samyaksingh1845@gmail.com');
-                      setPassword('samyaksingh1845@gmail.com');
-                    }}
-                    className="p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-left transition cursor-pointer"
-                  >
-                    <p className="text-zinc-200 font-semibold truncate">Samyak Singh</p>
-                    <p className="text-indigo-400 text-[10px] uppercase font-mono font-medium">Admin</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('owner@gorepireo.in');
-                      setPassword('password123');
-                    }}
-                    className="p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-left transition cursor-pointer"
-                  >
-                    <p className="text-zinc-200 font-semibold truncate">Prithibi Mandi</p>
-                    <p className="text-amber-400 text-[10px] uppercase font-mono font-medium">Owner</p>
-                  </button>
-                </div>
-              </div>
             </form>
           )}
 
@@ -211,17 +181,6 @@ export function LoginPage() {
           Learn • Build • Grow
         </p>
       </div>
-
-      {/* Face Enrollment / Assignment Modal */}
-      <FaceEnrollModal
-        isOpen={isEnrollModalOpen}
-        onClose={() => setIsEnrollModalOpen(false)}
-        onSuccess={() => {
-          setIsEnrollModalOpen(false);
-          // If in face mode, refresh enrolled accounts
-          setAuthMode('face');
-        }}
-      />
     </div>
   );
 }
