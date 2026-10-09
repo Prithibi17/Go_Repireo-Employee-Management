@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock, Mail, Shield, ScanFace, KeyRound, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -6,8 +6,14 @@ import { FaceLoginScanner } from '@/components/auth/FaceLoginScanner';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [authMode, setAuthMode] = useState<'password' | 'face'>('password');
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   // Password Login State
   const [email, setEmail] = useState('');

@@ -90,6 +90,9 @@ app.post('/api/auth/logout', (c) => {
   deleteCookie(c, 'gr_auth_session', { path: '/' });
   deleteCookie(c, 'gr_user_email', { path: '/' });
   deleteCookie(c, 'gr_user_role', { path: '/' });
+  setCookie(c, 'gr_auth_session', '', { path: '/', maxAge: 0 });
+  setCookie(c, 'gr_user_email', '', { path: '/', maxAge: 0 });
+  setCookie(c, 'gr_user_role', '', { path: '/', maxAge: 0 });
   return c.json({ success: true });
 });
 

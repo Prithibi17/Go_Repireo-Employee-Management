@@ -68298,13 +68298,18 @@ var revokeResourceSchema = external_exports.object({
 
 // src/server/authHelper.ts
 async function getCurrentUser(c) {
-  const sessionRole = getCookie(c, "gr_user_role") || "OWNER";
-  const sessionEmail = getCookie(c, "gr_user_email") || "owner@gorepireo.in";
+  const sessionToken = getCookie(c, "gr_auth_session");
+  const sessionEmail = getCookie(c, "gr_user_email");
+  const sessionRole = getCookie(c, "gr_user_role");
+  if (!sessionToken || !sessionEmail) {
+    return null;
+  }
+  const normalizedEmail = sessionEmail.trim().toLowerCase();
   try {
     const db = getTursoClient();
     const res = await db.execute({
       sql: "SELECT * FROM profiles WHERE lower(email) = lower(?) LIMIT 1",
-      args: [sessionEmail]
+      args: [normalizedEmail]
     });
     if (res.rows.length > 0) {
       const p = res.rows[0];
@@ -68312,49 +68317,54 @@ async function getCurrentUser(c) {
         id: String(p.id),
         email: String(p.email),
         full_name: String(p.full_name),
-        role: p.role || sessionRole,
+        role: p.role || sessionRole || "EMPLOYEE",
         avatar_url: p.avatar_url ? String(p.avatar_url) : null
       };
     } else {
-      const isSamyak = sessionEmail.toLowerCase() === "samyaksingh1845@gmail.com";
+      const isSamyak = normalizedEmail === "samyaksingh1845@gmail.com";
       const id = isSamyak ? "admin-profile-samyak" : `prof-${Date.now()}`;
-      const fullName = isSamyak ? "Samyak Singh" : sessionEmail.includes("owner") ? "Prithibi Mandi" : "Authorized User";
-      const roleToUse = isSamyak ? "ADMIN" : sessionRole;
+      const fullName = isSamyak ? "Samyak Singh" : normalizedEmail.includes("owner") ? "Prithibi Mandi" : "Authorized User";
+      const roleToUse = isSamyak ? "ADMIN" : sessionRole || "EMPLOYEE";
       await db.execute({
         sql: `INSERT OR IGNORE INTO profiles (id, email, full_name, role, is_active, created_at, updated_at)
               VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))`,
-        args: [id, sessionEmail, fullName, roleToUse]
+        args: [id, normalizedEmail, fullName, roleToUse]
       });
       return {
         id,
-        email: sessionEmail,
+        email: normalizedEmail,
         full_name: fullName,
         role: roleToUse
       };
     }
   } catch {
-    const isSamyak = sessionEmail.toLowerCase() === "samyaksingh1845@gmail.com";
+    const isSamyak = normalizedEmail === "samyaksingh1845@gmail.com";
     return {
-      id: isSamyak ? "admin-profile-samyak" : "owner-1",
-      email: sessionEmail,
-      full_name: isSamyak ? "Samyak Singh" : "Prithibi Mandi",
-      role: isSamyak ? "ADMIN" : sessionRole
+      id: isSamyak ? "admin-profile-samyak" : "user-session",
+      email: normalizedEmail,
+      full_name: isSamyak ? "Samyak Singh" : normalizedEmail.includes("owner") ? "Prithibi Mandi" : "Authorized User",
+      role: isSamyak ? "ADMIN" : sessionRole || "EMPLOYEE"
     };
   }
 }
 function canManagePeople(role) {
+  if (!role) return false;
   return ["OWNER", "ADMIN", "PEOPLE_MANAGER"].includes(role);
 }
 function canIssueCertificates(role) {
+  if (!role) return false;
   return ["OWNER", "ADMIN"].includes(role);
 }
 function canManageSettings(role) {
+  if (!role) return false;
   return ["OWNER", "ADMIN"].includes(role);
 }
 function canManageUsers(role) {
+  if (!role) return false;
   return role === "OWNER";
 }
 function canManageApiKeys(role) {
+  if (!role) return false;
   return role === "OWNER";
 }
 
@@ -68614,6 +68624,9 @@ app.post("/api/auth/logout", (c) => {
   deleteCookie(c, "gr_auth_session", { path: "/" });
   deleteCookie(c, "gr_user_email", { path: "/" });
   deleteCookie(c, "gr_user_role", { path: "/" });
+  setCookie(c, "gr_auth_session", "", { path: "/", maxAge: 0 });
+  setCookie(c, "gr_user_email", "", { path: "/", maxAge: 0 });
+  setCookie(c, "gr_user_role", "", { path: "/", maxAge: 0 });
   return c.json({ success: true });
 });
 app.get("/api/auth/me", async (c) => {
