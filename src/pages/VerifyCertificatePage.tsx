@@ -33,9 +33,9 @@ export function VerifyCertificatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans">
-      {/* Official Registry Top Bar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans print:bg-white print:min-h-0 print:p-0">
+      {/* Official Registry Top Bar (Hidden on print) */}
+      <header className="web-header bg-white border-b border-slate-200 sticky top-0 z-10 print:hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
@@ -62,9 +62,9 @@ export function VerifyCertificatePage() {
       </header>
 
       {/* Main Verification Content */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-10">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-10 print:max-w-none print:w-full print:p-0 print:m-0">
         {!result || result.status === 'NOT_FOUND' ? (
-          <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden verification-print-document">
             <div className="p-4 sm:p-5 bg-rose-50/60 border-b border-rose-100 flex items-center gap-3">
               <div className="w-8 h-8 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
                 <XCircle className="w-5 h-5" />
@@ -94,7 +94,30 @@ export function VerifyCertificatePage() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden verification-print-document print:rounded-none">
+            {/* Print-Only Official Letterhead Header */}
+            <div className="hidden print:flex items-center justify-between p-5 border-b-2 border-slate-800 bg-white">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/gorepireo-logo.png"
+                  alt="Go_Repireo"
+                  className="h-9 w-9 object-contain"
+                />
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-tight text-slate-900">
+                    Go_Repireo Technologies
+                  </h2>
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+                    Official Credential Registry • Internship Certificate Verification Record
+                  </p>
+                </div>
+              </div>
+              <div className="text-right text-[10px] text-slate-500 font-mono">
+                <p className="font-bold text-slate-800">REF: {code}</p>
+                <p>Checked: {nowFormatted}</p>
+              </div>
+            </div>
+
             {/* Status Header */}
             {result.status === 'REVOKED' ? (
               <div className="px-5 py-4 bg-rose-50 border-b border-rose-200 flex items-center justify-between">
@@ -199,7 +222,7 @@ export function VerifyCertificatePage() {
 
             {/* PDF Download if available */}
             {result.certificate_id && (
-              <div className="p-4 bg-white border-t border-slate-100">
+              <div className="p-4 bg-white border-t border-slate-100 print:hidden">
                 <a
                   href={`/api/certificates/${result.certificate_id}/download`}
                   target="_blank"
@@ -231,8 +254,20 @@ export function VerifyCertificatePage() {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="px-5 py-3 bg-white border-t border-slate-100 flex items-center justify-between text-xs">
+            {/* Print-Only Verification Attestation Footer */}
+            <div className="hidden print:flex items-center justify-between p-4 border-t border-slate-200 text-[10px] text-slate-500 bg-slate-50">
+              <div>
+                <p className="font-semibold text-slate-700 uppercase">Go_Repireo HR & Administration</p>
+                <p>Computer-verified official credential record • Valid proof of internship award</p>
+              </div>
+              <div className="text-right font-mono text-[9px] text-slate-400">
+                <p>gorepireo.in/verify/certificate/{code}</p>
+                <p>{nowFormatted}</p>
+              </div>
+            </div>
+
+            {/* Quick Actions (Hidden on print) */}
+            <div className="px-5 py-3 bg-white border-t border-slate-100 flex items-center justify-between text-xs print:hidden">
               <button
                 type="button"
                 onClick={() => window.print()}
@@ -255,8 +290,8 @@ export function VerifyCertificatePage() {
         )}
       </main>
 
-      {/* Institutional Page Footer */}
-      <footer className="py-6 border-t border-slate-200 bg-white text-center text-[11px] text-slate-500">
+      {/* Institutional Page Footer (Hidden on print) */}
+      <footer className="web-footer py-6 border-t border-slate-200 bg-white text-center text-[11px] text-slate-500 print:hidden">
         <p>
           © {new Date().getFullYear()} Go_Repireo. All rights reserved. • Central Credential Registry
         </p>
