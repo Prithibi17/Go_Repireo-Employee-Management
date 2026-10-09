@@ -36,6 +36,7 @@ export function PersonDetailPage() {
   const activeInternship = person.internships?.[0] || null;
   const activeIdCard = person.id_cards?.find((c: any) => c.status === 'ACTIVE') || person.id_cards?.[0] || null;
   const certificates = person.certificates || [];
+  const offerLetters = person.offer_letters || [];
 
   return (
     <PersonProfileClient
@@ -43,6 +44,7 @@ export function PersonDetailPage() {
       activeInternship={activeInternship}
       activeIdCard={activeIdCard}
       certificates={certificates}
+      offerLetters={offerLetters}
       company={company}
       activityLogs={activityLogs || []}
       userRole={user?.role || 'VIEWER'}

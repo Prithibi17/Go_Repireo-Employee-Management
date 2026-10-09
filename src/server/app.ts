@@ -4,6 +4,7 @@ import { DataService } from '../services/dataService';
 import { personSchema } from '../validators';
 import { getCurrentUser, canManagePeople, canIssueCertificates, canManageSettings, canManageUsers, canManageApiKeys } from './authHelper';
 import { generateOfficialCertificatePdf } from '../services/pdfCertificateService';
+import { generateOfficialOfferLetterPdf } from '../services/pdfOfferLetterService';
 import { getTursoClient } from '../lib/turso';
 
 const app = new Hono();
@@ -543,6 +544,152 @@ app.get('/api/certificates/:id/download', async (c) => {
   } catch (err: any) {
     console.error('PDF generation error', err);
     return c.text('Failed to generate PDF', 500);
+  }
+});
+
+// === OFFER LETTERS ===
+app.get('/api/offer-letters', async (c) => {
+  try {
+    const personId = c.req.query('person_id');
+    const offerLetters = await DataService.getOfferLetters(personId);
+    return c.json({ success: true, offerLetters });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+app.get('/api/offer-letters/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const offerLetter = await DataService.getOfferLetterById(id);
+    if (!offerLetter) {
+      return c.json({ success: false, error: 'Offer letter not found' }, 404);
+    }
+    const company = await DataService.getCompanySettings();
+    const activityLogs = await DataService.getActivityLogsForEntity('OFFER_LETTER', offerLetter.id);
+    return c.json({ success: true, offerLetter, company, activityLogs });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+app.get('/api/offer-letters/:id/pdf', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const offerLetter = await DataService.getOfferLetterById(id);
+    if (!offerLetter) {
+      return c.text('Offer letter not found', 404);
+    }
+
+    const pdfBytes = await generateOfficialOfferLetterPdf(offerLetter);
+    const sanitizedName = (offerLetter.recipient_name || 'Candidate').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `GoRepireo_Offer_Letter_${sanitizedName}_${offerLetter.letter_number}.pdf`;
+
+    return new Response(Buffer.from(pdfBytes), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    });
+  } catch (err: any) {
+    console.error('Offer letter PDF generation error', err);
+    return c.text('Failed to generate offer letter PDF', 500);
+  }
+});
+
+app.post('/api/offer-letters', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized to generate offer letters' }, 403);
+    }
+
+    const body = await c.req.json();
+    const offerLetter = await DataService.createOfferLetter({
+      ...body,
+      actor: { id: currentUser.id, name: currentUser.full_name },
+    });
+
+    return c.json({ success: true, offerLetter });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to create offer letter' }, 400);
+  }
+});
+
+app.put('/api/offer-letters/:id', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized to update offer letters' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const offerLetter = await DataService.updateOfferLetter(id, body, {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: true, offerLetter });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to update offer letter' }, 400);
+  }
+});
+
+app.post('/api/offer-letters/:id/send', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const offerLetter = await DataService.markOfferLetterSent(id, {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: true, offerLetter });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to mark offer letter as sent' }, 400);
+  }
+});
+
+app.post('/api/offer-letters/:id/delete', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const result = await DataService.deleteOfferLetter(id, {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: true, ...result });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to delete offer letter' }, 400);
+  }
+});
+
+app.delete('/api/offer-letters/:id', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const result = await DataService.deleteOfferLetter(id, {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: true, ...result });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to delete offer letter' }, 400);
   }
 });
 

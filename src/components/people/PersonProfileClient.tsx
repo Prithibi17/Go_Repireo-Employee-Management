@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Person, Internship, IdCard, Certificate, CompanySettings, ActivityLog } from '@/types';
+import { Person, Internship, IdCard, Certificate, OfferLetter, CompanySettings, ActivityLog } from '@/types';
 import { PersonAvatar, PersonStatusBadge, PersonTypeBadge } from '@/components/ui/Badges';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { IDCardDocument } from '@/components/documents/IDCardDocument';
 import { CertificateDocument } from '@/components/documents/CertificateDocument';
+import { OfferLetterDocument } from '@/components/documents/OfferLetterDocument';
+import { OfferLetterFormModal } from '@/components/documents/OfferLetterFormModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { 
@@ -19,6 +21,7 @@ interface PersonProfileClientProps {
   activeInternship?: Internship | null;
   activeIdCard?: IdCard | null;
   certificates: Certificate[];
+  offerLetters?: OfferLetter[];
   company: CompanySettings;
   activityLogs: ActivityLog[];
   userRole: string;
@@ -30,13 +33,16 @@ export function PersonProfileClient({
   activeInternship,
   activeIdCard,
   certificates,
+  offerLetters,
   company,
   activityLogs,
   userRole,
   onRefresh,
 }: PersonProfileClientProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'idcard' | 'certificates' | 'activity'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'idcard' | 'offer-letters' | 'certificates' | 'activity'>('overview');
   const [loading, setLoading] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const effectiveOfferLetters = offerLetters || person.offer_letters || [];
 
   // Dialog States
   const [showPromoteDialog, setShowPromoteDialog] = useState(false);
@@ -373,6 +379,19 @@ export function PersonProfileClient({
               Edit Profile
             </Link>
 
+            {/* Offer Letter Action */}
+            <button
+              onClick={() => {
+                setActiveTab('offer-letters');
+                setShowOfferModal(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg shadow-xs transition cursor-pointer"
+              title="Generate Official Offer Letter"
+            >
+              <FileText className="w-3.5 h-3.5 text-indigo-600" />
+              Offer Letter
+            </button>
+
             {/* Archive */}
             {person.status !== 'ARCHIVED' && (
               <button
@@ -429,6 +448,7 @@ export function PersonProfileClient({
         {[
           { id: 'overview', label: 'Overview & Details' },
           { id: 'idcard', label: `ID Card (${activeIdCard ? '1 Active' : 'None'})` },
+          { id: 'offer-letters', label: `Offer Letter (${effectiveOfferLetters.length})` },
           { id: 'certificates', label: `Certificates (${certificates.length})` },
           { id: 'activity', label: 'Activity & Audit Log' },
         ].map((tab) => (
@@ -675,6 +695,55 @@ export function PersonProfileClient({
                   Generate Certificate
                 </button>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: OFFER LETTERS */}
+      {activeTab === 'offer-letters' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Official Employment Offer Letters</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Official Go_Repireo vector employment offer letters with dynamic fields and official formatting.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowOfferModal(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Generate Offer Letter
+            </button>
+          </div>
+
+          {effectiveOfferLetters.length > 0 ? (
+            <div className="space-y-6">
+              {effectiveOfferLetters.map((offer) => (
+                <OfferLetterDocument
+                  key={offer.id}
+                  offer={offer}
+                  canManage={Boolean(['OWNER', 'ADMIN', 'PEOPLE_MANAGER'].includes(userRole))}
+                  onRefresh={onRefresh}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-xs">
+              <FileText className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-slate-900">No Offer Letter Generated Yet</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
+                Generate an official vector PDF offer letter for {person.full_name} with pre-filled candidate details, dates, and terms.
+              </p>
+              <button
+                onClick={() => setShowOfferModal(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-xs transition cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Generate Offer Letter
+              </button>
             </div>
           )}
         </div>
@@ -1062,6 +1131,20 @@ export function PersonProfileClient({
           </label>
         </div>
       </ConfirmDialog>
+
+      {/* Offer Letter Modal */}
+      {showOfferModal && (
+        <OfferLetterFormModal
+          isOpen={showOfferModal}
+          onClose={() => setShowOfferModal(false)}
+          person={person}
+          onSuccess={() => {
+            setShowOfferModal(false);
+            setActiveTab('offer-letters');
+            onRefresh?.();
+          }}
+        />
+      )}
     </div>
   );
 }

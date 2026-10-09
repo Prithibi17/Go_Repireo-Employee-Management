@@ -5353,10 +5353,10 @@ var require_segments = __commonJS({
       const segs = getSegmentsFromString(data, Utils.isKanjiModeEnabled());
       const nodes = buildNodes(segs);
       const graph = buildGraph(nodes, version3);
-      const path2 = dijkstra.find_path(graph.map, "start", "end");
+      const path3 = dijkstra.find_path(graph.map, "start", "end");
       const optimizedSegs = [];
-      for (let i = 1; i < path2.length - 1; i++) {
-        optimizedSegs.push(graph.table[path2[i]].node);
+      for (let i = 1; i < path3.length - 1; i++) {
+        optimizedSegs.push(graph.table[path3[i]].node);
       }
       return exports.fromArray(mergeSegments(optimizedSegs));
     };
@@ -7792,7 +7792,7 @@ var require_utils2 = __commonJS({
 // node_modules/qrcode/lib/renderer/png.js
 var require_png2 = __commonJS({
   "node_modules/qrcode/lib/renderer/png.js"(exports) {
-    var fs2 = __require("fs");
+    var fs3 = __require("fs");
     var PNG = require_png().PNG;
     var Utils = require_utils2();
     exports.render = function render(qrData, options) {
@@ -7833,7 +7833,7 @@ var require_png2 = __commonJS({
       });
       png.pack();
     };
-    exports.renderToFile = function renderToFile(path2, qrData, options, cb) {
+    exports.renderToFile = function renderToFile(path3, qrData, options, cb) {
       if (typeof cb === "undefined") {
         cb = options;
         options = void 0;
@@ -7844,7 +7844,7 @@ var require_png2 = __commonJS({
         called = true;
         cb.apply(null, args);
       };
-      const stream = fs2.createWriteStream(path2);
+      const stream = fs3.createWriteStream(path3);
       stream.on("error", done);
       stream.on("close", done);
       exports.renderToFileStream(stream, qrData, options);
@@ -7906,14 +7906,14 @@ var require_utf8 = __commonJS({
       }
       return output2;
     };
-    exports.renderToFile = function renderToFile(path2, qrData, options, cb) {
+    exports.renderToFile = function renderToFile(path3, qrData, options, cb) {
       if (typeof cb === "undefined") {
         cb = options;
         options = void 0;
       }
-      const fs2 = __require("fs");
+      const fs3 = __require("fs");
       const utf8 = exports.render(qrData, options);
-      fs2.writeFile(path2, utf8, cb);
+      fs3.writeFile(path3, utf8, cb);
     };
   }
 });
@@ -8034,7 +8034,7 @@ var require_svg_tag = __commonJS({
       return str;
     }
     function qrToPath(data, size, margin) {
-      let path2 = "";
+      let path3 = "";
       let moveBy = 0;
       let newRow = false;
       let lineLength = 0;
@@ -8045,19 +8045,19 @@ var require_svg_tag = __commonJS({
         if (data[i]) {
           lineLength++;
           if (!(i > 0 && col > 0 && data[i - 1])) {
-            path2 += newRow ? svgCmd("M", col + margin, 0.5 + row + margin) : svgCmd("m", moveBy, 0);
+            path3 += newRow ? svgCmd("M", col + margin, 0.5 + row + margin) : svgCmd("m", moveBy, 0);
             moveBy = 0;
             newRow = false;
           }
           if (!(col + 1 < size && data[i + 1])) {
-            path2 += svgCmd("h", lineLength);
+            path3 += svgCmd("h", lineLength);
             lineLength = 0;
           }
         } else {
           moveBy++;
         }
       }
-      return path2;
+      return path3;
     }
     exports.render = function render(qrData, options, cb) {
       const opts = Utils.getOptions(options);
@@ -8065,10 +8065,10 @@ var require_svg_tag = __commonJS({
       const data = qrData.modules.data;
       const qrcodesize = size + opts.margin * 2;
       const bg = !opts.color.light.a ? "" : "<path " + getColorAttrib(opts.color.light, "fill") + ' d="M0 0h' + qrcodesize + "v" + qrcodesize + 'H0z"/>';
-      const path2 = "<path " + getColorAttrib(opts.color.dark, "stroke") + ' d="' + qrToPath(data, size, opts.margin) + '"/>';
+      const path3 = "<path " + getColorAttrib(opts.color.dark, "stroke") + ' d="' + qrToPath(data, size, opts.margin) + '"/>';
       const viewBox = 'viewBox="0 0 ' + qrcodesize + " " + qrcodesize + '"';
       const width = !opts.width ? "" : 'width="' + opts.width + '" height="' + opts.width + '" ';
-      const svgTag = '<svg xmlns="http://www.w3.org/2000/svg" ' + width + viewBox + ' shape-rendering="crispEdges">' + bg + path2 + "</svg>\n";
+      const svgTag = '<svg xmlns="http://www.w3.org/2000/svg" ' + width + viewBox + ' shape-rendering="crispEdges">' + bg + path3 + "</svg>\n";
       if (typeof cb === "function") {
         cb(null, svgTag);
       }
@@ -8082,15 +8082,15 @@ var require_svg = __commonJS({
   "node_modules/qrcode/lib/renderer/svg.js"(exports) {
     var svgTagRenderer = require_svg_tag();
     exports.render = svgTagRenderer.render;
-    exports.renderToFile = function renderToFile(path2, qrData, options, cb) {
+    exports.renderToFile = function renderToFile(path3, qrData, options, cb) {
       if (typeof cb === "undefined") {
         cb = options;
         options = void 0;
       }
-      const fs2 = __require("fs");
+      const fs3 = __require("fs");
       const svgTag = exports.render(qrData, options);
       const xmlStr = '<?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">' + svgTag;
-      fs2.writeFile(path2, xmlStr, cb);
+      fs3.writeFile(path3, xmlStr, cb);
     };
   }
 });
@@ -8248,8 +8248,8 @@ var require_server = __commonJS({
         cb
       };
     }
-    function getTypeFromFilename(path2) {
-      return path2.slice((path2.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
+    function getTypeFromFilename(path3) {
+      return path3.slice((path3.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
     }
     function getRendererFromType(type) {
       switch (type) {
@@ -8313,17 +8313,17 @@ var require_server = __commonJS({
       const renderer = getRendererFromType(params.opts.type);
       return render(renderer.renderToBuffer, text, params);
     };
-    exports.toFile = function toFile(path2, text, opts, cb) {
-      if (typeof path2 !== "string" || !(typeof text === "string" || typeof text === "object")) {
+    exports.toFile = function toFile(path3, text, opts, cb) {
+      if (typeof path3 !== "string" || !(typeof text === "string" || typeof text === "object")) {
         throw new Error("Invalid argument");
       }
       if (arguments.length < 3 && !canPromise()) {
         throw new Error("Too few arguments provided");
       }
       const params = checkParams(text, opts, cb);
-      const type = params.opts.type || getTypeFromFilename(path2);
+      const type = params.opts.type || getTypeFromFilename(path3);
       const renderer = getRendererFromType(type);
-      const renderToFile = renderer.renderToFile.bind(null, path2);
+      const renderToFile = renderer.renderToFile.bind(null, path3);
       return render(renderToFile, text, params);
     };
     exports.toFileStream = function toFileStream(stream, text, opts) {
@@ -33428,14 +33428,14 @@ var require_svgPath = __commonJS({
       ["Z", 0],
       ["z", 0]
     ]);
-    var parse4 = function(path2) {
+    var parse4 = function(path3) {
       var cmd;
       var ret = [];
       var args = [];
       var curArg = "";
       var foundDecimal = false;
       var params = 0;
-      for (var _i = 0, path_1 = path2; _i < path_1.length; _i++) {
+      for (var _i = 0, path_1 = path3; _i < path_1.length; _i++) {
         var c = path_1[_i];
         if (parameters.has(c)) {
           params = parameters.get(c);
@@ -33749,8 +33749,8 @@ var require_svgPath = __commonJS({
       ];
       return result;
     };
-    exports.svgPathToOperators = function(path2) {
-      return apply(parse4(path2));
+    exports.svgPathToOperators = function(path3) {
+      return apply(parse4(path3));
     };
   }
 });
@@ -33933,7 +33933,7 @@ var require_operations = __commonJS({
         operators_1.popGraphicsState()
       ]).filter(Boolean);
     };
-    exports.drawSvgPath = function(path2, options) {
+    exports.drawSvgPath = function(path3, options) {
       var _a3, _b, _c;
       return tslib_1.__spreadArrays([
         operators_1.pushGraphicsState(),
@@ -33947,7 +33947,7 @@ var require_operations = __commonJS({
         options.borderWidth && operators_1.setLineWidth(options.borderWidth),
         options.borderLineCap && operators_1.setLineCap(options.borderLineCap),
         operators_1.setDashPattern((_b = options.borderDashArray) !== null && _b !== void 0 ? _b : [], (_c = options.borderDashPhase) !== null && _c !== void 0 ? _c : 0)
-      ], svgPath_1.svgPathToOperators(path2), [
+      ], svgPath_1.svgPathToOperators(path3), [
         // prettier-ignore
         options.color && options.borderWidth ? operators_1.fillAndStroke() : options.color ? operators_1.fill() : options.borderColor ? operators_1.stroke() : operators_1.closePath(),
         operators_1.popGraphicsState()
@@ -36486,23 +36486,23 @@ var require_StandardFonts = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StandardFonts = void 0;
-    var StandardFonts2;
-    (function(StandardFonts3) {
-      StandardFonts3["Courier"] = "Courier";
-      StandardFonts3["CourierBold"] = "Courier-Bold";
-      StandardFonts3["CourierOblique"] = "Courier-Oblique";
-      StandardFonts3["CourierBoldOblique"] = "Courier-BoldOblique";
-      StandardFonts3["Helvetica"] = "Helvetica";
-      StandardFonts3["HelveticaBold"] = "Helvetica-Bold";
-      StandardFonts3["HelveticaOblique"] = "Helvetica-Oblique";
-      StandardFonts3["HelveticaBoldOblique"] = "Helvetica-BoldOblique";
-      StandardFonts3["TimesRoman"] = "Times-Roman";
-      StandardFonts3["TimesRomanBold"] = "Times-Bold";
-      StandardFonts3["TimesRomanItalic"] = "Times-Italic";
-      StandardFonts3["TimesRomanBoldItalic"] = "Times-BoldItalic";
-      StandardFonts3["Symbol"] = "Symbol";
-      StandardFonts3["ZapfDingbats"] = "ZapfDingbats";
-    })(StandardFonts2 = exports.StandardFonts || (exports.StandardFonts = {}));
+    var StandardFonts3;
+    (function(StandardFonts4) {
+      StandardFonts4["Courier"] = "Courier";
+      StandardFonts4["CourierBold"] = "Courier-Bold";
+      StandardFonts4["CourierOblique"] = "Courier-Oblique";
+      StandardFonts4["CourierBoldOblique"] = "Courier-BoldOblique";
+      StandardFonts4["Helvetica"] = "Helvetica";
+      StandardFonts4["HelveticaBold"] = "Helvetica-Bold";
+      StandardFonts4["HelveticaOblique"] = "Helvetica-Oblique";
+      StandardFonts4["HelveticaBoldOblique"] = "Helvetica-BoldOblique";
+      StandardFonts4["TimesRoman"] = "Times-Roman";
+      StandardFonts4["TimesRomanBold"] = "Times-Bold";
+      StandardFonts4["TimesRomanItalic"] = "Times-Italic";
+      StandardFonts4["TimesRomanBoldItalic"] = "Times-BoldItalic";
+      StandardFonts4["Symbol"] = "Symbol";
+      StandardFonts4["ZapfDingbats"] = "ZapfDingbats";
+    })(StandardFonts3 = exports.StandardFonts || (exports.StandardFonts = {}));
   }
 });
 
@@ -37156,10 +37156,10 @@ var require_PDFDocument = __commonJS({
     var PDFEmbeddedFile_1 = tslib_1.__importDefault(require_PDFEmbeddedFile());
     var PDFJavaScript_1 = tslib_1.__importDefault(require_PDFJavaScript());
     var JavaScriptEmbedder_1 = tslib_1.__importDefault(require_JavaScriptEmbedder());
-    var PDFDocument2 = (
+    var PDFDocument3 = (
       /** @class */
       (function() {
-        function PDFDocument3(context, ignoreEncryption, updateMetadata) {
+        function PDFDocument4(context, ignoreEncryption, updateMetadata) {
           var _this = this;
           this.defaultWordBreaks = [" "];
           this.computePages = function() {
@@ -37198,7 +37198,7 @@ var require_PDFDocument = __commonJS({
           if (updateMetadata)
             this.updateInfoDict();
         }
-        PDFDocument3.load = function(pdf, options) {
+        PDFDocument4.load = function(pdf, options) {
           if (options === void 0) {
             options = {};
           }
@@ -37216,12 +37216,12 @@ var require_PDFDocument = __commonJS({
                   return [4, core_1.PDFParser.forBytesWithOptions(bytes, parseSpeed, throwOnInvalidObject, capNumbers).parseDocument()];
                 case 1:
                   context = _f.sent();
-                  return [2, new PDFDocument3(context, ignoreEncryption, updateMetadata)];
+                  return [2, new PDFDocument4(context, ignoreEncryption, updateMetadata)];
               }
             });
           });
         };
-        PDFDocument3.create = function(options) {
+        PDFDocument4.create = function(options) {
           if (options === void 0) {
             options = {};
           }
@@ -37234,14 +37234,14 @@ var require_PDFDocument = __commonJS({
               pageTreeRef = context.register(pageTree);
               catalog = core_1.PDFCatalog.withContextAndPages(context, pageTreeRef);
               context.trailerInfo.Root = context.register(catalog);
-              return [2, new PDFDocument3(context, false, updateMetadata)];
+              return [2, new PDFDocument4(context, false, updateMetadata)];
             });
           });
         };
-        PDFDocument3.prototype.registerFontkit = function(fontkit) {
+        PDFDocument4.prototype.registerFontkit = function(fontkit) {
           this.fontkit = fontkit;
         };
-        PDFDocument3.prototype.getForm = function() {
+        PDFDocument4.prototype.getForm = function() {
           var form = this.formCache.access();
           if (form.hasXFA()) {
             console.warn("Removing XFA form data as pdf-lib does not support reading or writing XFA");
@@ -37249,63 +37249,63 @@ var require_PDFDocument = __commonJS({
           }
           return form;
         };
-        PDFDocument3.prototype.getTitle = function() {
+        PDFDocument4.prototype.getTitle = function() {
           var title = this.getInfoDict().lookup(core_1.PDFName.Title);
           if (!title)
             return void 0;
           assertIsLiteralOrHexString(title);
           return title.decodeText();
         };
-        PDFDocument3.prototype.getAuthor = function() {
+        PDFDocument4.prototype.getAuthor = function() {
           var author = this.getInfoDict().lookup(core_1.PDFName.Author);
           if (!author)
             return void 0;
           assertIsLiteralOrHexString(author);
           return author.decodeText();
         };
-        PDFDocument3.prototype.getSubject = function() {
+        PDFDocument4.prototype.getSubject = function() {
           var subject = this.getInfoDict().lookup(core_1.PDFName.Subject);
           if (!subject)
             return void 0;
           assertIsLiteralOrHexString(subject);
           return subject.decodeText();
         };
-        PDFDocument3.prototype.getKeywords = function() {
+        PDFDocument4.prototype.getKeywords = function() {
           var keywords = this.getInfoDict().lookup(core_1.PDFName.Keywords);
           if (!keywords)
             return void 0;
           assertIsLiteralOrHexString(keywords);
           return keywords.decodeText();
         };
-        PDFDocument3.prototype.getCreator = function() {
+        PDFDocument4.prototype.getCreator = function() {
           var creator = this.getInfoDict().lookup(core_1.PDFName.Creator);
           if (!creator)
             return void 0;
           assertIsLiteralOrHexString(creator);
           return creator.decodeText();
         };
-        PDFDocument3.prototype.getProducer = function() {
+        PDFDocument4.prototype.getProducer = function() {
           var producer = this.getInfoDict().lookup(core_1.PDFName.Producer);
           if (!producer)
             return void 0;
           assertIsLiteralOrHexString(producer);
           return producer.decodeText();
         };
-        PDFDocument3.prototype.getCreationDate = function() {
+        PDFDocument4.prototype.getCreationDate = function() {
           var creationDate = this.getInfoDict().lookup(core_1.PDFName.CreationDate);
           if (!creationDate)
             return void 0;
           assertIsLiteralOrHexString(creationDate);
           return creationDate.decodeDate();
         };
-        PDFDocument3.prototype.getModificationDate = function() {
+        PDFDocument4.prototype.getModificationDate = function() {
           var modificationDate = this.getInfoDict().lookup(core_1.PDFName.ModDate);
           if (!modificationDate)
             return void 0;
           assertIsLiteralOrHexString(modificationDate);
           return modificationDate.decodeDate();
         };
-        PDFDocument3.prototype.setTitle = function(title, options) {
+        PDFDocument4.prototype.setTitle = function(title, options) {
           utils_1.assertIs(title, "title", ["string"]);
           var key = core_1.PDFName.of("Title");
           this.getInfoDict().set(key, core_1.PDFHexString.fromText(title));
@@ -37314,63 +37314,63 @@ var require_PDFDocument = __commonJS({
             prefs.setDisplayDocTitle(true);
           }
         };
-        PDFDocument3.prototype.setAuthor = function(author) {
+        PDFDocument4.prototype.setAuthor = function(author) {
           utils_1.assertIs(author, "author", ["string"]);
           var key = core_1.PDFName.of("Author");
           this.getInfoDict().set(key, core_1.PDFHexString.fromText(author));
         };
-        PDFDocument3.prototype.setSubject = function(subject) {
+        PDFDocument4.prototype.setSubject = function(subject) {
           utils_1.assertIs(subject, "author", ["string"]);
           var key = core_1.PDFName.of("Subject");
           this.getInfoDict().set(key, core_1.PDFHexString.fromText(subject));
         };
-        PDFDocument3.prototype.setKeywords = function(keywords) {
+        PDFDocument4.prototype.setKeywords = function(keywords) {
           utils_1.assertIs(keywords, "keywords", [Array]);
           var key = core_1.PDFName.of("Keywords");
           this.getInfoDict().set(key, core_1.PDFHexString.fromText(keywords.join(" ")));
         };
-        PDFDocument3.prototype.setCreator = function(creator) {
+        PDFDocument4.prototype.setCreator = function(creator) {
           utils_1.assertIs(creator, "creator", ["string"]);
           var key = core_1.PDFName.of("Creator");
           this.getInfoDict().set(key, core_1.PDFHexString.fromText(creator));
         };
-        PDFDocument3.prototype.setProducer = function(producer) {
+        PDFDocument4.prototype.setProducer = function(producer) {
           utils_1.assertIs(producer, "creator", ["string"]);
           var key = core_1.PDFName.of("Producer");
           this.getInfoDict().set(key, core_1.PDFHexString.fromText(producer));
         };
-        PDFDocument3.prototype.setLanguage = function(language) {
+        PDFDocument4.prototype.setLanguage = function(language) {
           utils_1.assertIs(language, "language", ["string"]);
           var key = core_1.PDFName.of("Lang");
           this.catalog.set(key, core_1.PDFString.of(language));
         };
-        PDFDocument3.prototype.setCreationDate = function(creationDate) {
+        PDFDocument4.prototype.setCreationDate = function(creationDate) {
           utils_1.assertIs(creationDate, "creationDate", [[Date, "Date"]]);
           var key = core_1.PDFName.of("CreationDate");
           this.getInfoDict().set(key, core_1.PDFString.fromDate(creationDate));
         };
-        PDFDocument3.prototype.setModificationDate = function(modificationDate) {
+        PDFDocument4.prototype.setModificationDate = function(modificationDate) {
           utils_1.assertIs(modificationDate, "modificationDate", [[Date, "Date"]]);
           var key = core_1.PDFName.of("ModDate");
           this.getInfoDict().set(key, core_1.PDFString.fromDate(modificationDate));
         };
-        PDFDocument3.prototype.getPageCount = function() {
+        PDFDocument4.prototype.getPageCount = function() {
           if (this.pageCount === void 0)
             this.pageCount = this.getPages().length;
           return this.pageCount;
         };
-        PDFDocument3.prototype.getPages = function() {
+        PDFDocument4.prototype.getPages = function() {
           return this.pageCache.access();
         };
-        PDFDocument3.prototype.getPage = function(index) {
+        PDFDocument4.prototype.getPage = function(index) {
           var pages = this.getPages();
           utils_1.assertRange(index, "index", 0, pages.length - 1);
           return pages[index];
         };
-        PDFDocument3.prototype.getPageIndices = function() {
+        PDFDocument4.prototype.getPageIndices = function() {
           return utils_1.range(0, this.getPageCount());
         };
-        PDFDocument3.prototype.removePage = function(index) {
+        PDFDocument4.prototype.removePage = function(index) {
           var pageCount = this.getPageCount();
           if (this.pageCount === 0)
             throw new errors_1.RemovePageFromEmptyDocumentError();
@@ -37378,11 +37378,11 @@ var require_PDFDocument = __commonJS({
           this.catalog.removeLeafNode(index);
           this.pageCount = pageCount - 1;
         };
-        PDFDocument3.prototype.addPage = function(page) {
+        PDFDocument4.prototype.addPage = function(page) {
           utils_1.assertIs(page, "page", ["undefined", [PDFPage_1.default, "PDFPage"], Array]);
           return this.insertPage(this.getPageCount(), page);
         };
-        PDFDocument3.prototype.insertPage = function(index, page) {
+        PDFDocument4.prototype.insertPage = function(index, page) {
           var pageCount = this.getPageCount();
           utils_1.assertRange(index, "index", 0, pageCount);
           utils_1.assertIs(page, "page", ["undefined", [PDFPage_1.default, "PDFPage"], Array]);
@@ -37400,13 +37400,13 @@ var require_PDFDocument = __commonJS({
           this.pageCount = pageCount + 1;
           return page;
         };
-        PDFDocument3.prototype.copyPages = function(srcDoc, indices) {
+        PDFDocument4.prototype.copyPages = function(srcDoc, indices) {
           return tslib_1.__awaiter(this, void 0, void 0, function() {
             var copier, srcPages, copiedPages, idx, len, srcPage, copiedPage, ref;
             return tslib_1.__generator(this, function(_a3) {
               switch (_a3.label) {
                 case 0:
-                  utils_1.assertIs(srcDoc, "srcDoc", [[PDFDocument3, "PDFDocument"]]);
+                  utils_1.assertIs(srcDoc, "srcDoc", [[PDFDocument4, "PDFDocument"]]);
                   utils_1.assertIs(indices, "indices", [Array]);
                   return [4, srcDoc.flush()];
                 case 1:
@@ -37425,13 +37425,13 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.copy = function() {
+        PDFDocument4.prototype.copy = function() {
           return tslib_1.__awaiter(this, void 0, void 0, function() {
             var pdfCopy, contentPages, idx, len;
             return tslib_1.__generator(this, function(_a3) {
               switch (_a3.label) {
                 case 0:
-                  return [4, PDFDocument3.create()];
+                  return [4, PDFDocument4.create()];
                 case 1:
                   pdfCopy = _a3.sent();
                   return [4, pdfCopy.copyPages(this, this.getPageIndices())];
@@ -37467,7 +37467,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.addJavaScript = function(name, script) {
+        PDFDocument4.prototype.addJavaScript = function(name, script) {
           utils_1.assertIs(name, "name", ["string"]);
           utils_1.assertIs(script, "script", ["string"]);
           var embedder = JavaScriptEmbedder_1.default.for(script, name);
@@ -37475,7 +37475,7 @@ var require_PDFDocument = __commonJS({
           var javaScript = PDFJavaScript_1.default.of(ref, this, embedder);
           this.javaScripts.push(javaScript);
         };
-        PDFDocument3.prototype.attach = function(attachment, name, options) {
+        PDFDocument4.prototype.attach = function(attachment, name, options) {
           if (options === void 0) {
             options = {};
           }
@@ -37503,7 +37503,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.embedFont = function(font, options) {
+        PDFDocument4.prototype.embedFont = function(font, options) {
           if (options === void 0) {
             options = {};
           }
@@ -37546,7 +37546,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.embedStandardFont = function(font, customName) {
+        PDFDocument4.prototype.embedStandardFont = function(font, customName) {
           utils_1.assertIs(font, "font", ["string"]);
           if (!utils_1.isStandardFont(font)) {
             throw new TypeError("`font` must be one of type `StandardFonts`");
@@ -37557,7 +37557,7 @@ var require_PDFDocument = __commonJS({
           this.fonts.push(pdfFont);
           return pdfFont;
         };
-        PDFDocument3.prototype.embedJpg = function(jpg) {
+        PDFDocument4.prototype.embedJpg = function(jpg) {
           return tslib_1.__awaiter(this, void 0, void 0, function() {
             var bytes, embedder, ref, pdfImage;
             return tslib_1.__generator(this, function(_a3) {
@@ -37576,7 +37576,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.embedPng = function(png) {
+        PDFDocument4.prototype.embedPng = function(png) {
           return tslib_1.__awaiter(this, void 0, void 0, function() {
             var bytes, embedder, ref, pdfImage;
             return tslib_1.__generator(this, function(_a3) {
@@ -37595,7 +37595,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.embedPdf = function(pdf, indices) {
+        PDFDocument4.prototype.embedPdf = function(pdf, indices) {
           if (indices === void 0) {
             indices = [0];
           }
@@ -37608,14 +37608,14 @@ var require_PDFDocument = __commonJS({
                     "string",
                     Uint8Array,
                     ArrayBuffer,
-                    [PDFDocument3, "PDFDocument"]
+                    [PDFDocument4, "PDFDocument"]
                   ]);
                   utils_1.assertIs(indices, "indices", [Array]);
-                  if (!(pdf instanceof PDFDocument3)) return [3, 1];
+                  if (!(pdf instanceof PDFDocument4)) return [3, 1];
                   _a3 = pdf;
                   return [3, 3];
                 case 1:
-                  return [4, PDFDocument3.load(pdf)];
+                  return [4, PDFDocument4.load(pdf)];
                 case 2:
                   _a3 = _b.sent();
                   _b.label = 3;
@@ -37627,7 +37627,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.embedPage = function(page, boundingBox, transformationMatrix) {
+        PDFDocument4.prototype.embedPage = function(page, boundingBox, transformationMatrix) {
           return tslib_1.__awaiter(this, void 0, void 0, function() {
             var embeddedPage;
             return tslib_1.__generator(this, function(_a3) {
@@ -37642,7 +37642,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.embedPages = function(pages, boundingBoxes, transformationMatrices) {
+        PDFDocument4.prototype.embedPages = function(pages, boundingBoxes, transformationMatrices) {
           if (boundingBoxes === void 0) {
             boundingBoxes = [];
           }
@@ -37692,7 +37692,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.flush = function() {
+        PDFDocument4.prototype.flush = function() {
           return tslib_1.__awaiter(this, void 0, void 0, function() {
             return tslib_1.__generator(this, function(_a3) {
               switch (_a3.label) {
@@ -37720,7 +37720,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.save = function(options) {
+        PDFDocument4.prototype.save = function(options) {
           if (options === void 0) {
             options = {};
           }
@@ -37750,7 +37750,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.saveAsBase64 = function(options) {
+        PDFDocument4.prototype.saveAsBase64 = function(options) {
           if (options === void 0) {
             options = {};
           }
@@ -37770,7 +37770,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.findPageForAnnotationRef = function(ref) {
+        PDFDocument4.prototype.findPageForAnnotationRef = function(ref) {
           var pages = this.getPages();
           for (var idx = 0, len = pages.length; idx < len; idx++) {
             var page = pages[idx];
@@ -37781,7 +37781,7 @@ var require_PDFDocument = __commonJS({
           }
           return void 0;
         };
-        PDFDocument3.prototype.embedAll = function(embeddables) {
+        PDFDocument4.prototype.embedAll = function(embeddables) {
           return tslib_1.__awaiter(this, void 0, void 0, function() {
             var idx, len;
             return tslib_1.__generator(this, function(_a3) {
@@ -37807,7 +37807,7 @@ var require_PDFDocument = __commonJS({
             });
           });
         };
-        PDFDocument3.prototype.updateInfoDict = function() {
+        PDFDocument4.prototype.updateInfoDict = function() {
           var pdfLib = "pdf-lib (https://github.com/Hopding/pdf-lib)";
           var now = /* @__PURE__ */ new Date();
           var info = this.getInfoDict();
@@ -37818,7 +37818,7 @@ var require_PDFDocument = __commonJS({
           if (!info.get(core_1.PDFName.of("CreationDate")))
             this.setCreationDate(now);
         };
-        PDFDocument3.prototype.getInfoDict = function() {
+        PDFDocument4.prototype.getInfoDict = function() {
           var existingInfo = this.context.lookup(this.context.trailerInfo.Info);
           if (existingInfo instanceof core_1.PDFDict)
             return existingInfo;
@@ -37826,15 +37826,15 @@ var require_PDFDocument = __commonJS({
           this.context.trailerInfo.Info = this.context.register(newInfo);
           return newInfo;
         };
-        PDFDocument3.prototype.assertFontkit = function() {
+        PDFDocument4.prototype.assertFontkit = function() {
           if (!this.fontkit)
             throw new errors_1.FontkitNotRegisteredError();
           return this.fontkit;
         };
-        return PDFDocument3;
+        return PDFDocument4;
       })()
     );
-    exports.default = PDFDocument2;
+    exports.default = PDFDocument3;
     function assertIsLiteralOrHexString(pdfObject) {
       if (!(pdfObject instanceof core_1.PDFHexString) && !(pdfObject instanceof core_1.PDFString)) {
         throw new core_1.UnexpectedObjectTypeError([core_1.PDFHexString, core_1.PDFString], pdfObject);
@@ -38245,12 +38245,12 @@ var require_PDFPage = __commonJS({
             graphicsState: graphicsStateKey
           }));
         };
-        PDFPage2.prototype.drawSvgPath = function(path2, options) {
+        PDFPage2.prototype.drawSvgPath = function(path3, options) {
           var _a3, _b, _c, _d, _e, _f, _g, _h, _j;
           if (options === void 0) {
             options = {};
           }
-          utils_1.assertIs(path2, "path", ["string"]);
+          utils_1.assertIs(path3, "path", ["string"]);
           utils_1.assertOrUndefined(options.x, "options.x", ["number"]);
           utils_1.assertOrUndefined(options.y, "options.y", ["number"]);
           utils_1.assertOrUndefined(options.scale, "options.scale", ["number"]);
@@ -38279,7 +38279,7 @@ var require_PDFPage = __commonJS({
             options.borderColor = colors_1.rgb(0, 0, 0);
           }
           var contentStream = this.getContentStream();
-          contentStream.push.apply(contentStream, operations_1.drawSvgPath(path2, {
+          contentStream.push.apply(contentStream, operations_1.drawSvgPath(path3, {
             x: (_a3 = options.x) !== null && _a3 !== void 0 ? _a3 : this.x,
             y: (_b = options.y) !== null && _b !== void 0 ? _b : this.y,
             scale: options.scale,
@@ -40041,26 +40041,26 @@ var throwNestingLimitExceeded = () => {
 };
 
 // node_modules/hono/dist/utils/url.js
-var splitPath = (path2) => {
-  const paths = path2.split("/");
+var splitPath = (path3) => {
+  const paths = path3.split("/");
   if (paths[0] === "") paths.shift();
   return paths;
 };
 var splitRoutingPath = (routePath) => {
-  const { groups, path: path2 } = extractGroupsFromPath(routePath);
-  const paths = splitPath(path2);
+  const { groups, path: path3 } = extractGroupsFromPath(routePath);
+  const paths = splitPath(path3);
   return replaceGroupMarks(paths, groups);
 };
-var extractGroupsFromPath = (path2) => {
+var extractGroupsFromPath = (path3) => {
   const groups = [];
-  path2 = path2.replace(/\{[^}]+\}/g, (match2, index) => {
+  path3 = path3.replace(/\{[^}]+\}/g, (match2, index) => {
     const mark = `@${index}`;
     groups.push([mark, match2]);
     return mark;
   });
   return {
     groups,
-    path: path2
+    path: path3
   };
 };
 var replaceGroupMarks = (paths, groups) => {
@@ -40123,8 +40123,8 @@ var getPath = (request) => {
       const queryIndex = url2.indexOf("?", i);
       const hashIndex = url2.indexOf("#", i);
       const end = queryIndex === -1 ? hashIndex === -1 ? void 0 : hashIndex : hashIndex === -1 ? queryIndex : Math.min(queryIndex, hashIndex);
-      const path2 = url2.slice(start, end);
-      return tryDecodeURI(path2.includes("%25") ? path2.replace(/%25/g, "%2525") : path2);
+      const path3 = url2.slice(start, end);
+      return tryDecodeURI(path3.includes("%25") ? path3.replace(/%25/g, "%2525") : path3);
     } else if (charCode === 63 || charCode === 35) break;
   }
   return url2.slice(start, i);
@@ -40137,9 +40137,9 @@ var mergePath = (base, sub, ...rest) => {
   if (rest.length) sub = mergePath(sub, ...rest);
   return `${base?.[0] === "/" ? "" : "/"}${base}${sub === "/" ? "" : `${base?.at(-1) === "/" ? "" : "/"}${sub?.[0] === "/" ? sub.slice(1) : sub}`}`;
 };
-var checkOptionalParameter = (path2) => {
-  if (path2.charCodeAt(path2.length - 1) !== 63 || !path2.includes(":")) return null;
-  const segments = path2.split("/");
+var checkOptionalParameter = (path3) => {
+  if (path3.charCodeAt(path3.length - 1) !== 63 || !path3.includes(":")) return null;
+  const segments = path3.split("/");
   const results = [];
   let basePath = "";
   segments.forEach((segment) => {
@@ -40245,9 +40245,9 @@ var HonoRequest = class {
   */
   path;
   bodyCache = {};
-  constructor(request, path2 = "/", matchResult = [[]]) {
+  constructor(request, path3 = "/", matchResult = [[]]) {
     this.raw = request;
-    this.path = path2;
+    this.path = path3;
     this.#matchResult = matchResult;
   }
   param(key) {
@@ -40977,8 +40977,8 @@ var Hono = class Hono2 {
         return this;
       };
     });
-    this.on = (method, path2, ...handlers) => {
-      for (const p of [path2].flat()) {
+    this.on = (method, path3, ...handlers) => {
+      for (const p of [path3].flat()) {
         this.#path = p;
         for (const m of [method].flat()) {
           const methodName = m.toUpperCase();
@@ -41032,8 +41032,8 @@ var Hono = class Hono2 {
   * app.route("/api", app2) // GET /api/user
   * ```
   */
-  route(path2, app2) {
-    const subApp = this.basePath(path2);
+  route(path3, app2) {
+    const subApp = this.basePath(path3);
     app2.routes.map((r) => {
       let handler2;
       if (app2.errorHandler === errorHandler) handler2 = r.handler;
@@ -41058,9 +41058,9 @@ var Hono = class Hono2 {
   * const api = new Hono().basePath('/api')
   * ```
   */
-  basePath(path2) {
+  basePath(path3) {
     const subApp = this.#clone();
-    subApp._basePath = mergePath(this._basePath, path2);
+    subApp._basePath = mergePath(this._basePath, path3);
     return subApp;
   }
   /**
@@ -41136,7 +41136,7 @@ var Hono = class Hono2 {
   * })
   * ```
   */
-  mount(path2, applicationHandler, options) {
+  mount(path3, applicationHandler, options) {
     let replaceRequest;
     let optionHandler;
     if (options) {
@@ -41159,7 +41159,7 @@ var Hono = class Hono2 {
       return [c.env, executionContext];
     };
     replaceRequest ||= (() => {
-      const mergedPath = mergePath(this._basePath, path2);
+      const mergedPath = mergePath(this._basePath, path3);
       const pathPrefixLength = mergedPath === "/" ? 0 : mergedPath.length;
       return (request) => {
         const url2 = new URL(request.url);
@@ -41172,18 +41172,18 @@ var Hono = class Hono2 {
       if (res) return res;
       await next();
     };
-    this.#addRoute("ALL", mergePath(path2, "*"), handler2);
+    this.#addRoute("ALL", mergePath(path3, "*"), handler2);
     return this;
   }
-  #addRoute(method, path2, handler2, baseRoutePath) {
-    path2 = mergePath(this._basePath, path2);
+  #addRoute(method, path3, handler2, baseRoutePath) {
+    path3 = mergePath(this._basePath, path3);
     const r = {
       basePath: baseRoutePath !== void 0 ? mergePath(this._basePath, baseRoutePath) : this._basePath,
-      path: path2,
+      path: path3,
       method,
       handler: handler2
     };
-    this.router.add(method, path2, [handler2, r]);
+    this.router.add(method, path3, [handler2, r]);
     this.routes.push(r);
   }
   #handleError(err, c) {
@@ -41192,10 +41192,10 @@ var Hono = class Hono2 {
   }
   #dispatch(request, executionCtx, env, method) {
     if (method === "HEAD") return (async () => new Response(null, await this.#dispatch(request, executionCtx, env, "GET")))();
-    const path2 = this.getPath(request, { env });
-    const matchResult = this.router.match(method, path2);
+    const path3 = this.getPath(request, { env });
+    const matchResult = this.router.match(method, path3);
     const c = new Context(request, {
-      path: path2,
+      path: path3,
       matchResult,
       env,
       executionCtx,
@@ -41283,19 +41283,19 @@ var createNullObject = () => /* @__PURE__ */ Object.create(null);
 
 // node_modules/hono/dist/router/reg-exp-router/matcher.js
 var emptyParam = [];
-function match(method, path2) {
+function match(method, path3) {
   const matchers = this.buildAllMatchers();
-  const match2 = ((method2, path3) => {
+  const match2 = ((method2, path4) => {
     const matcher = matchers[method2] || matchers["ALL"];
-    const staticMatch = matcher[2][path3];
+    const staticMatch = matcher[2][path4];
     if (staticMatch) return staticMatch;
-    const match3 = path3.match(matcher[0]);
+    const match3 = path4.match(matcher[0]);
     if (!match3) return [[], emptyParam];
     const index = match3.indexOf("", 1);
     return [matcher[1][index], match3];
   });
   this.match = match2;
-  return match2(method, path2);
+  return match2(method, path3);
 }
 
 // node_modules/hono/dist/router/reg-exp-router/node.js
@@ -41385,14 +41385,14 @@ var Trie = class {
   #root = new Node();
   #index = 0;
   paths = createNullObject();
-  insert(path2, isStatic) {
+  insert(path3, isStatic) {
     if (isStatic) {
-      this.#root.insert(path2.split(""), 0, [], this.#context, true);
+      this.#root.insert(path3.split(""), 0, [], this.#context, true);
       return;
     }
     const paramAssoc = [];
     const groups = [];
-    let markedPath = path2;
+    let markedPath = path3;
     for (let i = 0; ; ) {
       let replaced = false;
       markedPath = markedPath.replace(/\{[^}]+\}/g, (m) => {
@@ -41413,7 +41413,7 @@ var Trie = class {
       }
     }
     this.#root.insert(tokens, this.#index, paramAssoc, this.#context, false);
-    this.paths[path2] = [this.#index++, paramAssoc];
+    this.paths[path3] = [this.#index++, paramAssoc];
   }
   buildRegExp() {
     let regexp = this.#root.buildRegExpStr();
@@ -41446,11 +41446,11 @@ var Trie = class {
 
 // node_modules/hono/dist/router/reg-exp-router/router.js
 var wildcardRegExpCache = createNullObject();
-function buildWildcardRegExp(path2) {
-  return wildcardRegExpCache[path2] ??= new RegExp(`^${path2.replace(/\/:[^/{}]+(?:\{\[\^\/]\+})?(?=[/{]|$)|\/?\*$|([.\\+*[^\]$()?{}|])/g, (match2, metaChar) => metaChar ? `\\${metaChar}` : match2 === "/*" ? TAIL_WILDCARD_REG_EXP_STR : match2 === "*" ? ".*" : `/:${LABEL_REG_EXP_STR}`)}$`);
+function buildWildcardRegExp(path3) {
+  return wildcardRegExpCache[path3] ??= new RegExp(`^${path3.replace(/\/:[^/{}]+(?:\{\[\^\/]\+})?(?=[/{]|$)|\/?\*$|([.\\+*[^\]$()?{}|])/g, (match2, metaChar) => metaChar ? `\\${metaChar}` : match2 === "/*" ? TAIL_WILDCARD_REG_EXP_STR : match2 === "*" ? ".*" : `/:${LABEL_REG_EXP_STR}`)}$`);
 }
-function findMiddleware(middleware, path2) {
-  for (const k of Object.keys(middleware).sort((a, b) => b.length - a.length)) if (buildWildcardRegExp(k).test(path2)) return [...middleware[k]];
+function findMiddleware(middleware, path3) {
+  for (const k of Object.keys(middleware).sort((a, b) => b.length - a.length)) if (buildWildcardRegExp(k).test(path3)) return [...middleware[k]];
 }
 var RegExpRouter = class {
   name = "RegExpRouter";
@@ -41462,14 +41462,14 @@ var RegExpRouter = class {
     this.#routes = { ["ALL"]: createNullObject() };
     this.#tries = { ["ALL"]: new Trie() };
   }
-  #insertPath(method, path2) {
+  #insertPath(method, path3) {
     try {
-      this.#tries[method].insert(path2, !/\*|\/:/.test(path2));
+      this.#tries[method].insert(path3, !/\*|\/:/.test(path3));
     } catch (e) {
-      throw e === PATH_ERROR ? new UnsupportedPathError(path2) : e;
+      throw e === PATH_ERROR ? new UnsupportedPathError(path3) : e;
     }
   }
-  add(method, path2, handler2) {
+  add(method, path3, handler2) {
     const middleware = this.#middleware;
     const routes = this.#routes;
     if (!middleware) throw new Error(MESSAGE_MATCHER_IS_ALREADY_BUILT);
@@ -41483,24 +41483,24 @@ var RegExpRouter = class {
         }
       }
     }
-    if (path2 === "/*") path2 = "*";
+    if (path3 === "/*") path3 = "*";
     const methods = method === "ALL" ? Object.keys(middleware) : [method];
-    if (/\*$/.test(path2)) {
-      const re = buildWildcardRegExp(path2);
-      for (const m of methods) if (!middleware[m][path2]) {
-        this.#insertPath(m, path2);
-        middleware[m][path2] = findMiddleware(middleware[m], path2) || findMiddleware(middleware["ALL"], path2) || [];
+    if (/\*$/.test(path3)) {
+      const re = buildWildcardRegExp(path3);
+      for (const m of methods) if (!middleware[m][path3]) {
+        this.#insertPath(m, path3);
+        middleware[m][path3] = findMiddleware(middleware[m], path3) || findMiddleware(middleware["ALL"], path3) || [];
       }
-      for (const handlerMap of [middleware, routes]) for (const m of methods) for (const p in handlerMap[m]) re.test(p) && handlerMap[m][p].push([handler2, path2]);
+      for (const handlerMap of [middleware, routes]) for (const m of methods) for (const p in handlerMap[m]) re.test(p) && handlerMap[m][p].push([handler2, path3]);
       return;
     }
-    const paths = checkOptionalParameter(path2) || [path2];
-    for (const path3 of paths) for (const m of methods) {
-      if (!routes[m][path3]) {
-        this.#insertPath(m, path3);
-        routes[m][path3] = findMiddleware(middleware[m], path3) || findMiddleware(middleware["ALL"], path3) || [];
+    const paths = checkOptionalParameter(path3) || [path3];
+    for (const path4 of paths) for (const m of methods) {
+      if (!routes[m][path4]) {
+        this.#insertPath(m, path4);
+        routes[m][path4] = findMiddleware(middleware[m], path4) || findMiddleware(middleware["ALL"], path4) || [];
       }
-      routes[m][path3].push([handler2, path3]);
+      routes[m][path4].push([handler2, path4]);
     }
   }
   match = match;
@@ -41518,11 +41518,11 @@ var RegExpRouter = class {
     const staticMap = createNullObject();
     const handlerData = [];
     const [regexp, indexReplacementMap, paramReplacementMap] = trie.buildRegExp();
-    for (const r of [middleware, routes]) for (const path2 in r) {
-      const handlers = r[path2];
-      const pathData = trie.paths[path2];
+    for (const r of [middleware, routes]) for (const path3 in r) {
+      const handlers = r[path3];
+      const pathData = trie.paths[path3];
       if (!pathData) {
-        staticMap[path2] = [handlers.map(([h]) => [h, createNullObject()]), emptyParam];
+        staticMap[path3] = [handlers.map(([h]) => [h, createNullObject()]), emptyParam];
         continue;
       }
       handlerData[pathData[0]] = handlers.map(([h, handlerPath]) => [h, trie.paths[handlerPath][1].reduceRight((map2, [key], i) => {
@@ -41546,15 +41546,15 @@ var SmartRouter = class {
   constructor(init) {
     this.#routers = init.routers;
   }
-  add(method, path2, handler2) {
+  add(method, path3, handler2) {
     if (!this.#routes) throw new Error(MESSAGE_MATCHER_IS_ALREADY_BUILT);
     this.#routes.push([
       method,
-      path2,
+      path3,
       handler2
     ]);
   }
-  match(method, path2) {
+  match(method, path3) {
     if (!this.#routes) throw new Error("Fatal error");
     const routers = this.#routers;
     const routes = this.#routes;
@@ -41565,7 +41565,7 @@ var SmartRouter = class {
       const router = routers[i];
       try {
         for (let i2 = 0, len2 = routes.length; i2 < len2; i2++) router.add(...routes[i2]);
-        res = router.match(method, path2);
+        res = router.match(method, path3);
       } catch (e) {
         if (e instanceof UnsupportedPathError) continue;
         throw e;
@@ -41594,9 +41594,9 @@ var Node3 = class Node4 {
   #patterns = [];
   #pattern;
   #params = emptyParams;
-  insert(method, path2, handler2) {
+  insert(method, path3, handler2) {
     let curNode = this;
-    const parts = splitRoutingPath(path2);
+    const parts = splitRoutingPath(path3);
     const possibleKeys = /* @__PURE__ */ new Set();
     let i = 0;
     for (const p of parts) {
@@ -41632,11 +41632,11 @@ var Node3 = class Node4 {
       }
     }
   }
-  search(method, path2) {
+  search(method, path3) {
     const handlerSets = [];
     this.#params = emptyParams;
     let curNodes = [this];
-    const parts = splitPath(path2);
+    const parts = splitPath(path3);
     const curNodesQueue = [];
     const len = parts.length;
     let partOffsets = null;
@@ -41672,13 +41672,13 @@ var Node3 = class Node4 {
           if (matcher !== true) {
             if (!partOffsets) {
               partOffsets = [];
-              let offset = path2[0] === "/" ? 1 : 0;
+              let offset = path3[0] === "/" ? 1 : 0;
               for (let p = 0; p < len; p++) {
                 partOffsets[p] = offset;
                 offset += parts[p].length + 1;
               }
             }
-            const restPathString = path2.slice(partOffsets[i]);
+            const restPathString = path3.slice(partOffsets[i]);
             const m = matcher.exec(restPathString);
             if (m) {
               params[name] = m[0];
@@ -41719,11 +41719,11 @@ var Node3 = class Node4 {
 var TrieRouter = class {
   name = "TrieRouter";
   #node = new Node3();
-  add(method, path2, handler2) {
-    for (const result of checkOptionalParameter(path2) || [path2]) this.#node.insert(method, result, handler2);
+  add(method, path3, handler2) {
+    for (const result of checkOptionalParameter(path3) || [path3]) this.#node.insert(method, result, handler2);
   }
-  match(method, path2) {
-    return this.#node.search(method, path2);
+  match(method, path3) {
+    return this.#node.search(method, path3);
   }
 };
 
@@ -41900,10 +41900,10 @@ function parseUri(text) {
   const groups = match2.groups;
   const scheme = groups["scheme"];
   const authority = groups["authority"] !== void 0 ? parseAuthority(groups["authority"]) : void 0;
-  const path2 = percentDecode(groups["path"]);
+  const path3 = percentDecode(groups["path"]);
   const query = groups["query"] !== void 0 ? parseQuery(groups["query"]) : void 0;
   const fragment = groups["fragment"] !== void 0 ? percentDecode(groups["fragment"]) : void 0;
-  return { scheme, authority, path: path2, query, fragment };
+  return { scheme, authority, path: path3, query, fragment };
 }
 var URI_RE = (() => {
   const SCHEME = "(?<scheme>[A-Za-z][A-Za-z.+-]*)";
@@ -41964,7 +41964,7 @@ function percentDecode(text) {
     throw e;
   }
 }
-function encodeBaseUrl(scheme, authority, path2) {
+function encodeBaseUrl(scheme, authority, path3) {
   if (authority === void 0) {
     throw new LibsqlError(`URL with scheme ${JSON.stringify(scheme + ":")} requires authority (the "//" part)`, "URL_INVALID");
   }
@@ -41973,7 +41973,7 @@ function encodeBaseUrl(scheme, authority, path2) {
   const portText = encodePort(authority.port);
   const userinfoText = encodeUserinfo(authority.userinfo);
   const authorityText = `//${userinfoText}${hostText}${portText}`;
-  let pathText = path2.split("/").map(encodeURIComponent).join("/");
+  let pathText = path3.split("/").map(encodeURIComponent).join("/");
   if (pathText !== "" && !pathText.startsWith("/")) {
     pathText = "/" + pathText;
   }
@@ -42252,7 +42252,7 @@ function expandConfig(config2, preferHttp) {
     }
   }
   const connectionQueryParamsString = connectionQueryParams.length === 0 ? "" : `?${connectionQueryParams.join("&")}`;
-  const path2 = uri.path + connectionQueryParamsString;
+  const path3 = uri.path + connectionQueryParamsString;
   let scheme;
   if (originalUriScheme === "libsql") {
     if (tls === false) {
@@ -42284,7 +42284,7 @@ function expandConfig(config2, preferHttp) {
     return {
       scheme: "file",
       tls: false,
-      path: path2,
+      path: path3,
       intMode,
       concurrency,
       syncUrl: config2.syncUrl,
@@ -42303,7 +42303,7 @@ function expandConfig(config2, preferHttp) {
     scheme,
     tls,
     authority: uri.authority,
-    path: path2,
+    path: path3,
     authToken,
     intMode,
     concurrency,
@@ -46736,16 +46736,46 @@ async function initTursoSchema() {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );`,
+    `CREATE TABLE IF NOT EXISTS offer_letters (
+      id TEXT PRIMARY KEY,
+      person_id TEXT NOT NULL,
+      letter_number TEXT UNIQUE NOT NULL,
+      issue_date TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ISSUED',
+      recipient_name TEXT NOT NULL,
+      recipient_email TEXT NOT NULL,
+      recipient_phone TEXT,
+      recipient_location TEXT,
+      position TEXT NOT NULL,
+      department TEXT,
+      duration TEXT NOT NULL,
+      duration_months INTEGER DEFAULT 3,
+      stipend TEXT NOT NULL DEFAULT 'Unpaid',
+      work_mode TEXT NOT NULL DEFAULT 'Remote (with occasional team meetings)',
+      reporting_to TEXT NOT NULL DEFAULT 'Prithibi Mandi (CTO)',
+      joining_date TEXT NOT NULL,
+      end_date TEXT,
+      signatory_name TEXT NOT NULL DEFAULT 'ANSH TIWARI',
+      signatory_title TEXT NOT NULL DEFAULT 'FOUNDER',
+      company_name TEXT NOT NULL DEFAULT 'Go_Repireo',
+      pdf_storage_path TEXT,
+      sent_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      created_by TEXT
+    );`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_people_person_code ON people (person_code);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_id_cards_card_number ON id_cards (card_number);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_certificates_cert_number ON certificates (certificate_number);`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_offer_letters_number ON offer_letters (letter_number);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_face_credentials_email ON user_face_credentials (user_email);`
   ]);
   await db.execute({
     sql: `INSERT OR IGNORE INTO app_sequences (name, current_value) VALUES 
       ('employee', 0),
       ('intern', 0),
-      ('certificate', 0);`,
+      ('certificate', 0),
+      ('offer_letter', 0);`,
     args: []
   });
   await db.execute({
@@ -47243,6 +47273,10 @@ var DataService = {
       sql: "SELECT * FROM certificates WHERE person_id = ? ORDER BY created_at DESC",
       args: [id]
     });
+    const offerLettersRes = await db.execute({
+      sql: "SELECT * FROM offer_letters WHERE person_id = ? ORDER BY created_at DESC",
+      args: [id]
+    });
     return {
       id: String(r.id),
       person_code: String(r.person_code),
@@ -47325,6 +47359,34 @@ var DataService = {
         issued_at: String(cert.issued_at),
         created_at: String(cert.created_at),
         updated_at: String(cert.updated_at)
+      })),
+      offer_letters: offerLettersRes.rows.map((row) => ({
+        id: String(row.id),
+        person_id: String(row.person_id),
+        letter_number: String(row.letter_number),
+        issue_date: String(row.issue_date),
+        status: row.status,
+        recipient_name: String(row.recipient_name),
+        recipient_email: String(row.recipient_email),
+        recipient_phone: row.recipient_phone ? String(row.recipient_phone) : null,
+        recipient_location: row.recipient_location ? String(row.recipient_location) : null,
+        position: String(row.position),
+        department: row.department ? String(row.department) : null,
+        duration: String(row.duration),
+        duration_months: row.duration_months ? Number(row.duration_months) : 3,
+        stipend: String(row.stipend || "Unpaid"),
+        work_mode: String(row.work_mode || "Remote (with occasional team meetings)"),
+        reporting_to: String(row.reporting_to || "Prithibi Mandi (CTO)"),
+        joining_date: String(row.joining_date),
+        end_date: row.end_date ? String(row.end_date) : null,
+        signatory_name: String(row.signatory_name || "ANSH TIWARI"),
+        signatory_title: String(row.signatory_title || "FOUNDER"),
+        company_name: String(row.company_name || "Go_Repireo"),
+        pdf_storage_path: row.pdf_storage_path ? String(row.pdf_storage_path) : null,
+        sent_at: row.sent_at ? String(row.sent_at) : null,
+        created_at: String(row.created_at),
+        updated_at: String(row.updated_at),
+        created_by: row.created_by ? String(row.created_by) : null
       }))
     };
   },
@@ -48025,6 +48087,290 @@ var DataService = {
       recipient: String(cert.recipient_name_snapshot)
     });
     return { success: true, certificateNumber: certNumber };
+  },
+  // === OFFER LETTERS ===
+  async generateUniqueOfferLetterNumber(issueDate) {
+    await ensureDb();
+    const db = getTursoClient();
+    const year = issueDate ? new Date(issueDate).getFullYear() : (/* @__PURE__ */ new Date()).getFullYear();
+    const prefix = `GRP/OL/${year}`;
+    const existingRes = await db.execute({
+      sql: "SELECT letter_number FROM offer_letters WHERE letter_number LIKE ?",
+      args: [`${prefix}/%`]
+    });
+    const existingNumbers = new Set(existingRes.rows.map((r) => String(r.letter_number)));
+    let attempts = 0;
+    while (attempts < 1e4) {
+      const randNum = Math.floor(1e3 + Math.random() * 9e3);
+      const candidate = `${prefix}/${randNum}`;
+      if (!existingNumbers.has(candidate)) {
+        return candidate;
+      }
+      attempts++;
+    }
+    return `${prefix}/${Math.floor(1e4 + Math.random() * 9e4)}`;
+  },
+  async getOfferLetters(personId) {
+    await ensureDb();
+    const db = getTursoClient();
+    let sql = `
+      SELECT o.*, p.person_code, p.full_name as person_full_name, p.profile_photo_path, p.designation as person_designation
+      FROM offer_letters o
+      LEFT JOIN people p ON o.person_id = p.id
+    `;
+    const args = [];
+    if (personId) {
+      sql += " WHERE o.person_id = ?";
+      args.push(personId);
+    }
+    sql += " ORDER BY o.created_at DESC";
+    const res = await db.execute({ sql, args });
+    return res.rows.map((row) => ({
+      id: String(row.id),
+      person_id: String(row.person_id),
+      letter_number: String(row.letter_number),
+      issue_date: String(row.issue_date),
+      status: row.status,
+      recipient_name: String(row.recipient_name),
+      recipient_email: String(row.recipient_email),
+      recipient_phone: row.recipient_phone ? String(row.recipient_phone) : null,
+      recipient_location: row.recipient_location ? String(row.recipient_location) : null,
+      position: String(row.position),
+      department: row.department ? String(row.department) : null,
+      duration: String(row.duration),
+      duration_months: row.duration_months ? Number(row.duration_months) : 3,
+      stipend: String(row.stipend || "Unpaid"),
+      work_mode: String(row.work_mode || "Remote (with occasional team meetings)"),
+      reporting_to: String(row.reporting_to || "Prithibi Mandi (CTO)"),
+      joining_date: String(row.joining_date),
+      end_date: row.end_date ? String(row.end_date) : null,
+      signatory_name: String(row.signatory_name || "ANSH TIWARI"),
+      signatory_title: String(row.signatory_title || "FOUNDER"),
+      company_name: String(row.company_name || "Go_Repireo"),
+      pdf_storage_path: row.pdf_storage_path ? String(row.pdf_storage_path) : null,
+      sent_at: row.sent_at ? String(row.sent_at) : null,
+      created_at: String(row.created_at),
+      updated_at: String(row.updated_at),
+      created_by: row.created_by ? String(row.created_by) : null,
+      person: row.person_full_name ? {
+        id: String(row.person_id),
+        person_code: String(row.person_code || ""),
+        full_name: String(row.person_full_name),
+        profile_photo_path: row.profile_photo_path ? String(row.profile_photo_path) : null,
+        designation: String(row.person_designation || ""),
+        person_type: "INTERN",
+        joining_date: "",
+        status: "ACTIVE",
+        created_at: "",
+        updated_at: ""
+      } : void 0
+    }));
+  },
+  async getOfferLetterById(id) {
+    await ensureDb();
+    const db = getTursoClient();
+    const res = await db.execute({
+      sql: `
+        SELECT o.*, p.person_code, p.full_name as person_full_name, p.profile_photo_path, p.designation as person_designation
+        FROM offer_letters o
+        LEFT JOIN people p ON o.person_id = p.id
+        WHERE o.id = ?
+      `,
+      args: [id]
+    });
+    if (res.rows.length === 0) return null;
+    const row = res.rows[0];
+    return {
+      id: String(row.id),
+      person_id: String(row.person_id),
+      letter_number: String(row.letter_number),
+      issue_date: String(row.issue_date),
+      status: row.status,
+      recipient_name: String(row.recipient_name),
+      recipient_email: String(row.recipient_email),
+      recipient_phone: row.recipient_phone ? String(row.recipient_phone) : null,
+      recipient_location: row.recipient_location ? String(row.recipient_location) : null,
+      position: String(row.position),
+      department: row.department ? String(row.department) : null,
+      duration: String(row.duration),
+      duration_months: row.duration_months ? Number(row.duration_months) : 3,
+      stipend: String(row.stipend || "Unpaid"),
+      work_mode: String(row.work_mode || "Remote (with occasional team meetings)"),
+      reporting_to: String(row.reporting_to || "Prithibi Mandi (CTO)"),
+      joining_date: String(row.joining_date),
+      end_date: row.end_date ? String(row.end_date) : null,
+      signatory_name: String(row.signatory_name || "ANSH TIWARI"),
+      signatory_title: String(row.signatory_title || "FOUNDER"),
+      company_name: String(row.company_name || "Go_Repireo"),
+      pdf_storage_path: row.pdf_storage_path ? String(row.pdf_storage_path) : null,
+      sent_at: row.sent_at ? String(row.sent_at) : null,
+      created_at: String(row.created_at),
+      updated_at: String(row.updated_at),
+      created_by: row.created_by ? String(row.created_by) : null,
+      person: row.person_full_name ? {
+        id: String(row.person_id),
+        person_code: String(row.person_code || ""),
+        full_name: String(row.person_full_name),
+        profile_photo_path: row.profile_photo_path ? String(row.profile_photo_path) : null,
+        designation: String(row.person_designation || ""),
+        person_type: "INTERN",
+        joining_date: "",
+        status: "ACTIVE",
+        created_at: "",
+        updated_at: ""
+      } : void 0
+    };
+  },
+  async createOfferLetter(params) {
+    await ensureDb();
+    const db = getTursoClient();
+    const offerId = `off-${Date.now()}`;
+    const issueDate = params.issueDate || (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const letterNumber = await this.generateUniqueOfferLetterNumber(issueDate);
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const joiningDate = params.joiningDate || (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const durationMonths = params.durationMonths || 3;
+    let duration3 = params.duration;
+    let endDate = params.endDate;
+    if (!duration3 || !endDate) {
+      const startD = new Date(joiningDate);
+      const endD = new Date(startD);
+      endD.setMonth(endD.getMonth() + durationMonths);
+      endD.setDate(endD.getDate() - 1);
+      endDate = endD.toISOString().split("T")[0];
+      const startFormatted = startD.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      const endFormatted = endD.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      duration3 = `${durationMonths} Months (${startFormatted} - ${endFormatted})`;
+    }
+    await db.execute({
+      sql: `INSERT INTO offer_letters (
+        id, person_id, letter_number, issue_date, status, recipient_name, recipient_email,
+        recipient_phone, recipient_location, position, department, duration, duration_months,
+        stipend, work_mode, reporting_to, joining_date, end_date, signatory_name, signatory_title,
+        company_name, created_at, updated_at, created_by
+      ) VALUES (?, ?, ?, ?, 'ISSUED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        offerId,
+        params.personId,
+        letterNumber,
+        issueDate,
+        params.recipientName,
+        params.recipientEmail,
+        params.recipientPhone || null,
+        params.recipientLocation || null,
+        params.position,
+        params.department || null,
+        duration3,
+        durationMonths,
+        params.stipend || "Unpaid",
+        params.workMode || "Remote (with occasional team meetings)",
+        params.reportingTo || "Prithibi Mandi (CTO)",
+        joiningDate,
+        endDate || null,
+        params.signatoryName || "ANSH TIWARI",
+        params.signatoryTitle || "FOUNDER",
+        params.companyName || "Go_Repireo",
+        now,
+        now,
+        params.actor.id || null
+      ]
+    });
+    await this.logActivity(params.actor, "OFFER_LETTER_CREATED", "OFFER_LETTER", offerId, {
+      letter_number: letterNumber,
+      recipient: params.recipientName,
+      position: params.position
+    });
+    const created = await this.getOfferLetterById(offerId);
+    return created;
+  },
+  async updateOfferLetter(id, params, actor) {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await this.getOfferLetterById(id);
+    if (!existing) throw new Error("Offer letter not found");
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    await db.execute({
+      sql: `UPDATE offer_letters SET
+        recipient_name = COALESCE(?, recipient_name),
+        recipient_email = COALESCE(?, recipient_email),
+        recipient_phone = ?,
+        recipient_location = ?,
+        position = COALESCE(?, position),
+        department = ?,
+        duration = COALESCE(?, duration),
+        duration_months = COALESCE(?, duration_months),
+        stipend = COALESCE(?, stipend),
+        work_mode = COALESCE(?, work_mode),
+        reporting_to = COALESCE(?, reporting_to),
+        joining_date = COALESCE(?, joining_date),
+        end_date = ?,
+        issue_date = COALESCE(?, issue_date),
+        signatory_name = COALESCE(?, signatory_name),
+        signatory_title = COALESCE(?, signatory_title),
+        status = COALESCE(?, status),
+        updated_at = ?
+      WHERE id = ?`,
+      args: [
+        params.recipient_name ?? null,
+        params.recipient_email ?? null,
+        params.recipient_phone !== void 0 ? params.recipient_phone : existing.recipient_phone,
+        params.recipient_location !== void 0 ? params.recipient_location : existing.recipient_location,
+        params.position ?? null,
+        params.department !== void 0 ? params.department : existing.department,
+        params.duration ?? null,
+        params.duration_months !== void 0 ? params.duration_months : existing.duration_months,
+        params.stipend ?? null,
+        params.work_mode ?? null,
+        params.reporting_to ?? null,
+        params.joining_date ?? null,
+        params.end_date !== void 0 ? params.end_date : existing.end_date,
+        params.issue_date ?? null,
+        params.signatory_name ?? null,
+        params.signatory_title ?? null,
+        params.status ?? null,
+        now,
+        id
+      ]
+    });
+    await this.logActivity(actor, "OFFER_LETTER_UPDATED", "OFFER_LETTER", id, {
+      letter_number: existing.letter_number,
+      recipient: params.recipient_name || existing.recipient_name
+    });
+    const updated = await this.getOfferLetterById(id);
+    return updated;
+  },
+  async markOfferLetterSent(id, actor) {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await this.getOfferLetterById(id);
+    if (!existing) throw new Error("Offer letter not found");
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    await db.execute({
+      sql: "UPDATE offer_letters SET status = 'SENT', sent_at = ?, updated_at = ? WHERE id = ?",
+      args: [now, now, id]
+    });
+    await this.logActivity(actor, "OFFER_LETTER_SENT", "OFFER_LETTER", id, {
+      letter_number: existing.letter_number,
+      recipient: existing.recipient_name,
+      email: existing.recipient_email
+    });
+    const updated = await this.getOfferLetterById(id);
+    return updated;
+  },
+  async deleteOfferLetter(id, actor) {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await this.getOfferLetterById(id);
+    if (!existing) throw new Error("Offer letter not found");
+    await db.execute({
+      sql: "DELETE FROM offer_letters WHERE id = ?",
+      args: [id]
+    });
+    await this.logActivity(actor, "OFFER_LETTER_DELETED", "OFFER_LETTER", id, {
+      letter_number: existing.letter_number,
+      recipient: existing.recipient_name
+    });
+    return { success: true, letterNumber: existing.letter_number };
   },
   // === PUBLIC VERIFICATION ===
   async verifyIdByToken(rawToken) {
@@ -49379,10 +49725,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path2) {
-  if (!path2)
+function getElementAtPath(obj, path3) {
+  if (!path3)
     return obj;
-  return path2.reduce((acc, key) => acc?.[key], obj);
+  return path3.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -49722,11 +50068,11 @@ function explicitlyAborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path2, issues) {
+function prefixIssues(path3, issues) {
   return issues.map((iss) => {
     var _a3;
     (_a3 = iss).path ?? (_a3.path = []);
-    iss.path.unshift(path2);
+    iss.path.unshift(path3);
     return iss;
   });
 }
@@ -50176,16 +50522,16 @@ function flattenError(error62, mapper = (issue2) => issue2.message) {
 }
 function formatError(error62, mapper = (issue2) => issue2.message) {
   const fieldErrors = { _errors: [] };
-  const processError = (error63, path2 = []) => {
+  const processError = (error63, path3 = []) => {
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path2, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path3, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path3, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path3, ...issue2.path]);
       } else {
-        const fullpath = [...path2, ...issue2.path];
+        const fullpath = [...path3, ...issue2.path];
         if (fullpath.length === 0) {
           fieldErrors._errors.push(mapper(issue2));
         } else {
@@ -50224,17 +50570,17 @@ function formatError(error62, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error62, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error63, path2 = []) => {
+  const processError = (error63, path3 = []) => {
     var _a3;
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path2, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path3, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path3, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path3, ...issue2.path]);
       } else {
-        const fullpath = [...path2, ...issue2.path];
+        const fullpath = [...path3, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -50273,8 +50619,8 @@ function treeifyError(error62, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path2 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path2) {
+  const path3 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path3) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -67376,13 +67722,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path2 = ref.slice(1).split("/").filter(Boolean);
-  if (path2.length === 0) {
+  const path3 = ref.slice(1).split("/").filter(Boolean);
+  if (path3.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path2[0] === defsKey) {
-    const key = path2[1] === void 0 ? void 0 : decodeJSONPointerSegment(path2[1]);
+  if (path3[0] === defsKey) {
+    const key = path3[1] === void 0 ? void 0 : decodeJSONPointerSegment(path3[1]);
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -68564,6 +68910,217 @@ async function generateOfficialCertificatePdf(certificate, appUrl = "https://go-
   return await pdfDoc.save();
 }
 
+// src/services/pdfOfferLetterService.ts
+var import_pdf_lib2 = __toESM(require_cjs(), 1);
+import fs2 from "fs";
+import path2 from "path";
+async function generateOfficialOfferLetterPdf(offer) {
+  const templatePath = path2.join(process.cwd(), "public", "official-offer-letter-template.pdf");
+  const templateBytes = fs2.readFileSync(templatePath);
+  const pdfDoc = await import_pdf_lib2.PDFDocument.load(templateBytes);
+  const page = pdfDoc.getPage(0);
+  const fontBold = await pdfDoc.embedFont(import_pdf_lib2.StandardFonts.HelveticaBold);
+  const fontRegular = await pdfDoc.embedFont(import_pdf_lib2.StandardFonts.Helvetica);
+  const black = (0, import_pdf_lib2.rgb)(0, 0, 0);
+  const textDark = (0, import_pdf_lib2.rgb)(0.12, 0.12, 0.12);
+  const white = (0, import_pdf_lib2.rgb)(1, 1, 1);
+  page.drawRectangle({
+    x: 560,
+    y: 775,
+    width: 190,
+    height: 40,
+    color: white
+  });
+  const formattedDate = offer.issue_date || (/* @__PURE__ */ new Date()).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const dateStr = `Date: ${formattedDate}`;
+  const dateWidth = fontBold.widthOfTextAtSize(dateStr, 12);
+  page.drawText(dateStr, {
+    x: Math.max(570, 742 - dateWidth),
+    y: 790,
+    size: 12,
+    font: fontBold,
+    color: black
+  });
+  page.drawRectangle({
+    x: 45,
+    y: 670,
+    width: 480,
+    height: 115,
+    color: white
+  });
+  let toY = 765;
+  page.drawText("To,", {
+    x: 48,
+    y: toY,
+    size: 12.5,
+    font: fontRegular,
+    color: black
+  });
+  toY -= 19;
+  const recipientName = offer.recipient_name || "Candidate";
+  page.drawText(recipientName, {
+    x: 48,
+    y: toY,
+    size: 13,
+    font: fontBold,
+    color: black
+  });
+  if (offer.recipient_location) {
+    toY -= 17;
+    page.drawText(offer.recipient_location, {
+      x: 48,
+      y: toY,
+      size: 11.5,
+      font: fontRegular,
+      color: textDark
+    });
+  }
+  if (offer.recipient_email) {
+    toY -= 17;
+    page.drawText(`Email: ${offer.recipient_email}`, {
+      x: 48,
+      y: toY,
+      size: 11.5,
+      font: fontRegular,
+      color: textDark
+    });
+  }
+  if (offer.recipient_phone) {
+    toY -= 17;
+    page.drawText(`Phone: ${offer.recipient_phone}`, {
+      x: 48,
+      y: toY,
+      size: 11.5,
+      font: fontRegular,
+      color: textDark
+    });
+  }
+  page.drawRectangle({
+    x: 45,
+    y: 635,
+    width: 450,
+    height: 30,
+    color: white
+  });
+  page.drawText(`Dear ${recipientName},`, {
+    x: 48,
+    y: 642,
+    size: 12.5,
+    font: fontBold,
+    color: black
+  });
+  page.drawRectangle({
+    x: 45,
+    y: 580,
+    width: 700,
+    height: 52,
+    color: white
+  });
+  const position = offer.position || "Software Developer Intern";
+  const companyPlatform = `${offer.company_name || "Go_Repireo"} (Home Services Platform)`;
+  const line1 = `We are pleased to offer you the position of ${position} at ${companyPlatform}. We`;
+  const line2 = `believe your skills and enthusiasm will be a valuable addition to our team.`;
+  page.drawText(line1, {
+    x: 48,
+    y: 610,
+    size: 11,
+    font: fontRegular,
+    color: textDark
+  });
+  page.drawText(line2, {
+    x: 48,
+    y: 594,
+    size: 11,
+    font: fontRegular,
+    color: textDark
+  });
+  page.drawRectangle({
+    x: 230,
+    y: 380,
+    width: 515,
+    height: 200,
+    color: white
+  });
+  page.drawText(position, {
+    x: 238,
+    y: 566,
+    size: 11.5,
+    font: fontBold,
+    color: black
+  });
+  const durationStr = offer.duration || "3 Months";
+  page.drawText(durationStr, {
+    x: 238,
+    y: 531,
+    size: 11.5,
+    font: fontBold,
+    color: black
+  });
+  const stipendStr = offer.stipend || "Unpaid";
+  page.drawText(stipendStr, {
+    x: 238,
+    y: 497,
+    size: 11.5,
+    font: fontBold,
+    color: black
+  });
+  const workModeStr = offer.work_mode || "Remote (with occasional team meetings)";
+  page.drawText(workModeStr, {
+    x: 238,
+    y: 463,
+    size: 11.5,
+    font: fontBold,
+    color: black
+  });
+  const reportingToStr = offer.reporting_to || "Prithibi Mandi (CTO)";
+  page.drawText(reportingToStr, {
+    x: 238,
+    y: 428,
+    size: 11.5,
+    font: fontBold,
+    color: black
+  });
+  const joiningDateStr = offer.joining_date || "10 October 2026";
+  page.drawText(joiningDateStr, {
+    x: 238,
+    y: 394,
+    size: 11.5,
+    font: fontBold,
+    color: black
+  });
+  if (offer.signatory_name && offer.signatory_name !== "ANSH TIWARI") {
+    page.drawRectangle({
+      x: 70,
+      y: 110,
+      width: 250,
+      height: 45,
+      color: white
+    });
+    page.drawText(offer.signatory_name.toUpperCase(), {
+      x: 74,
+      y: 138,
+      size: 13,
+      font: fontBold,
+      color: black
+    });
+    page.drawText((offer.signatory_title || "FOUNDER").toUpperCase(), {
+      x: 74,
+      y: 124,
+      size: 11,
+      font: fontRegular,
+      color: textDark
+    });
+    page.drawText(offer.company_name || "Go_Repireo", {
+      x: 74,
+      y: 110,
+      size: 11,
+      font: fontRegular,
+      color: textDark
+    });
+  }
+  return await pdfDoc.save();
+}
+
 // src/server/app.ts
 var app = new Hono3();
 app.post("/api/auth/login", async (c) => {
@@ -69017,6 +69574,131 @@ app.get("/api/certificates/:id/download", async (c) => {
   } catch (err) {
     console.error("PDF generation error", err);
     return c.text("Failed to generate PDF", 500);
+  }
+});
+app.get("/api/offer-letters", async (c) => {
+  try {
+    const personId = c.req.query("person_id");
+    const offerLetters = await DataService.getOfferLetters(personId);
+    return c.json({ success: true, offerLetters });
+  } catch (err) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+app.get("/api/offer-letters/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const offerLetter = await DataService.getOfferLetterById(id);
+    if (!offerLetter) {
+      return c.json({ success: false, error: "Offer letter not found" }, 404);
+    }
+    const company = await DataService.getCompanySettings();
+    const activityLogs = await DataService.getActivityLogsForEntity("OFFER_LETTER", offerLetter.id);
+    return c.json({ success: true, offerLetter, company, activityLogs });
+  } catch (err) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+app.get("/api/offer-letters/:id/pdf", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const offerLetter = await DataService.getOfferLetterById(id);
+    if (!offerLetter) {
+      return c.text("Offer letter not found", 404);
+    }
+    const pdfBytes = await generateOfficialOfferLetterPdf(offerLetter);
+    const sanitizedName = (offerLetter.recipient_name || "Candidate").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const filename = `GoRepireo_Offer_Letter_${sanitizedName}_${offerLetter.letter_number}.pdf`;
+    return new Response(Buffer.from(pdfBytes), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${filename}"`
+      }
+    });
+  } catch (err) {
+    console.error("Offer letter PDF generation error", err);
+    return c.text("Failed to generate offer letter PDF", 500);
+  }
+});
+app.post("/api/offer-letters", async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: "Unauthorized to generate offer letters" }, 403);
+    }
+    const body = await c.req.json();
+    const offerLetter = await DataService.createOfferLetter({
+      ...body,
+      actor: { id: currentUser.id, name: currentUser.full_name }
+    });
+    return c.json({ success: true, offerLetter });
+  } catch (err) {
+    return c.json({ success: false, error: err.message || "Failed to create offer letter" }, 400);
+  }
+});
+app.put("/api/offer-letters/:id", async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: "Unauthorized to update offer letters" }, 403);
+    }
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const offerLetter = await DataService.updateOfferLetter(id, body, {
+      id: currentUser.id,
+      name: currentUser.full_name
+    });
+    return c.json({ success: true, offerLetter });
+  } catch (err) {
+    return c.json({ success: false, error: err.message || "Failed to update offer letter" }, 400);
+  }
+});
+app.post("/api/offer-letters/:id/send", async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: "Unauthorized" }, 403);
+    }
+    const id = c.req.param("id");
+    const offerLetter = await DataService.markOfferLetterSent(id, {
+      id: currentUser.id,
+      name: currentUser.full_name
+    });
+    return c.json({ success: true, offerLetter });
+  } catch (err) {
+    return c.json({ success: false, error: err.message || "Failed to mark offer letter as sent" }, 400);
+  }
+});
+app.post("/api/offer-letters/:id/delete", async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: "Unauthorized" }, 403);
+    }
+    const id = c.req.param("id");
+    const result = await DataService.deleteOfferLetter(id, {
+      id: currentUser.id,
+      name: currentUser.full_name
+    });
+    return c.json({ success: true, ...result });
+  } catch (err) {
+    return c.json({ success: false, error: err.message || "Failed to delete offer letter" }, 400);
+  }
+});
+app.delete("/api/offer-letters/:id", async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: "Unauthorized" }, 403);
+    }
+    const id = c.req.param("id");
+    const result = await DataService.deleteOfferLetter(id, {
+      id: currentUser.id,
+      name: currentUser.full_name
+    });
+    return c.json({ success: true, ...result });
+  } catch (err) {
+    return c.json({ success: false, error: err.message || "Failed to delete offer letter" }, 400);
   }
 });
 app.post("/api/internships/complete", async (c) => {

@@ -201,9 +201,39 @@ export async function initTursoSchema() {
       updated_at TEXT NOT NULL
     );`,
 
+    `CREATE TABLE IF NOT EXISTS offer_letters (
+      id TEXT PRIMARY KEY,
+      person_id TEXT NOT NULL,
+      letter_number TEXT UNIQUE NOT NULL,
+      issue_date TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ISSUED',
+      recipient_name TEXT NOT NULL,
+      recipient_email TEXT NOT NULL,
+      recipient_phone TEXT,
+      recipient_location TEXT,
+      position TEXT NOT NULL,
+      department TEXT,
+      duration TEXT NOT NULL,
+      duration_months INTEGER DEFAULT 3,
+      stipend TEXT NOT NULL DEFAULT 'Unpaid',
+      work_mode TEXT NOT NULL DEFAULT 'Remote (with occasional team meetings)',
+      reporting_to TEXT NOT NULL DEFAULT 'Prithibi Mandi (CTO)',
+      joining_date TEXT NOT NULL,
+      end_date TEXT,
+      signatory_name TEXT NOT NULL DEFAULT 'ANSH TIWARI',
+      signatory_title TEXT NOT NULL DEFAULT 'FOUNDER',
+      company_name TEXT NOT NULL DEFAULT 'Go_Repireo',
+      pdf_storage_path TEXT,
+      sent_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      created_by TEXT
+    );`,
+
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_people_person_code ON people (person_code);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_id_cards_card_number ON id_cards (card_number);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_certificates_cert_number ON certificates (certificate_number);`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_offer_letters_number ON offer_letters (letter_number);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_face_credentials_email ON user_face_credentials (user_email);`
   ]);
 
@@ -212,7 +242,8 @@ export async function initTursoSchema() {
     sql: `INSERT OR IGNORE INTO app_sequences (name, current_value) VALUES 
       ('employee', 0),
       ('intern', 0),
-      ('certificate', 0);`,
+      ('certificate', 0),
+      ('offer_letter', 0);`,
     args: []
   });
 

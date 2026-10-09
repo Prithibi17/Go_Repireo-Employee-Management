@@ -454,6 +454,11 @@ export const DataService = {
       args: [id],
     });
 
+    const offerLettersRes = await db.execute({
+      sql: 'SELECT * FROM offer_letters WHERE person_id = ? ORDER BY created_at DESC',
+      args: [id],
+    });
+
     return {
       id: String(r.id),
       person_code: String(r.person_code),
@@ -536,6 +541,34 @@ export const DataService = {
         issued_at: String(cert.issued_at),
         created_at: String(cert.created_at),
         updated_at: String(cert.updated_at),
+      })),
+      offer_letters: offerLettersRes.rows.map((row) => ({
+        id: String(row.id),
+        person_id: String(row.person_id),
+        letter_number: String(row.letter_number),
+        issue_date: String(row.issue_date),
+        status: row.status as any,
+        recipient_name: String(row.recipient_name),
+        recipient_email: String(row.recipient_email),
+        recipient_phone: row.recipient_phone ? String(row.recipient_phone) : null,
+        recipient_location: row.recipient_location ? String(row.recipient_location) : null,
+        position: String(row.position),
+        department: row.department ? String(row.department) : null,
+        duration: String(row.duration),
+        duration_months: row.duration_months ? Number(row.duration_months) : 3,
+        stipend: String(row.stipend || 'Unpaid'),
+        work_mode: String(row.work_mode || 'Remote (with occasional team meetings)'),
+        reporting_to: String(row.reporting_to || 'Prithibi Mandi (CTO)'),
+        joining_date: String(row.joining_date),
+        end_date: row.end_date ? String(row.end_date) : null,
+        signatory_name: String(row.signatory_name || 'ANSH TIWARI'),
+        signatory_title: String(row.signatory_title || 'FOUNDER'),
+        company_name: String(row.company_name || 'Go_Repireo'),
+        pdf_storage_path: row.pdf_storage_path ? String(row.pdf_storage_path) : null,
+        sent_at: row.sent_at ? String(row.sent_at) : null,
+        created_at: String(row.created_at),
+        updated_at: String(row.updated_at),
+        created_by: row.created_by ? String(row.created_by) : null,
       })),
     };
   },
@@ -1366,6 +1399,340 @@ export const DataService = {
     });
 
     return { success: true, certificateNumber: certNumber };
+  },
+
+  // === OFFER LETTERS ===
+  async generateUniqueOfferLetterNumber(issueDate?: string): Promise<string> {
+    await ensureDb();
+    const db = getTursoClient();
+    const year = issueDate ? new Date(issueDate).getFullYear() : new Date().getFullYear();
+    const prefix = `GRP/OL/${year}`;
+
+    const existingRes = await db.execute({
+      sql: 'SELECT letter_number FROM offer_letters WHERE letter_number LIKE ?',
+      args: [`${prefix}/%`],
+    });
+    const existingNumbers = new Set(existingRes.rows.map((r) => String(r.letter_number)));
+
+    let attempts = 0;
+    while (attempts < 10000) {
+      const randNum = Math.floor(1000 + Math.random() * 9000);
+      const candidate = `${prefix}/${randNum}`;
+      if (!existingNumbers.has(candidate)) {
+        return candidate;
+      }
+      attempts++;
+    }
+    return `${prefix}/${Math.floor(10000 + Math.random() * 90000)}`;
+  },
+
+  async getOfferLetters(personId?: string): Promise<OfferLetter[]> {
+    await ensureDb();
+    const db = getTursoClient();
+    let sql = `
+      SELECT o.*, p.person_code, p.full_name as person_full_name, p.profile_photo_path, p.designation as person_designation
+      FROM offer_letters o
+      LEFT JOIN people p ON o.person_id = p.id
+    `;
+    const args: any[] = [];
+    if (personId) {
+      sql += ' WHERE o.person_id = ?';
+      args.push(personId);
+    }
+    sql += ' ORDER BY o.created_at DESC';
+
+    const res = await db.execute({ sql, args });
+    return res.rows.map((row) => ({
+      id: String(row.id),
+      person_id: String(row.person_id),
+      letter_number: String(row.letter_number),
+      issue_date: String(row.issue_date),
+      status: row.status as any,
+      recipient_name: String(row.recipient_name),
+      recipient_email: String(row.recipient_email),
+      recipient_phone: row.recipient_phone ? String(row.recipient_phone) : null,
+      recipient_location: row.recipient_location ? String(row.recipient_location) : null,
+      position: String(row.position),
+      department: row.department ? String(row.department) : null,
+      duration: String(row.duration),
+      duration_months: row.duration_months ? Number(row.duration_months) : 3,
+      stipend: String(row.stipend || 'Unpaid'),
+      work_mode: String(row.work_mode || 'Remote (with occasional team meetings)'),
+      reporting_to: String(row.reporting_to || 'Prithibi Mandi (CTO)'),
+      joining_date: String(row.joining_date),
+      end_date: row.end_date ? String(row.end_date) : null,
+      signatory_name: String(row.signatory_name || 'ANSH TIWARI'),
+      signatory_title: String(row.signatory_title || 'FOUNDER'),
+      company_name: String(row.company_name || 'Go_Repireo'),
+      pdf_storage_path: row.pdf_storage_path ? String(row.pdf_storage_path) : null,
+      sent_at: row.sent_at ? String(row.sent_at) : null,
+      created_at: String(row.created_at),
+      updated_at: String(row.updated_at),
+      created_by: row.created_by ? String(row.created_by) : null,
+      person: row.person_full_name ? {
+        id: String(row.person_id),
+        person_code: String(row.person_code || ''),
+        full_name: String(row.person_full_name),
+        profile_photo_path: row.profile_photo_path ? String(row.profile_photo_path) : null,
+        designation: String(row.person_designation || ''),
+        person_type: 'INTERN',
+        joining_date: '',
+        status: 'ACTIVE',
+        created_at: '',
+        updated_at: '',
+      } : undefined,
+    }));
+  },
+
+  async getOfferLetterById(id: string): Promise<OfferLetter | null> {
+    await ensureDb();
+    const db = getTursoClient();
+    const res = await db.execute({
+      sql: `
+        SELECT o.*, p.person_code, p.full_name as person_full_name, p.profile_photo_path, p.designation as person_designation
+        FROM offer_letters o
+        LEFT JOIN people p ON o.person_id = p.id
+        WHERE o.id = ?
+      `,
+      args: [id],
+    });
+    if (res.rows.length === 0) return null;
+    const row = res.rows[0];
+    return {
+      id: String(row.id),
+      person_id: String(row.person_id),
+      letter_number: String(row.letter_number),
+      issue_date: String(row.issue_date),
+      status: row.status as any,
+      recipient_name: String(row.recipient_name),
+      recipient_email: String(row.recipient_email),
+      recipient_phone: row.recipient_phone ? String(row.recipient_phone) : null,
+      recipient_location: row.recipient_location ? String(row.recipient_location) : null,
+      position: String(row.position),
+      department: row.department ? String(row.department) : null,
+      duration: String(row.duration),
+      duration_months: row.duration_months ? Number(row.duration_months) : 3,
+      stipend: String(row.stipend || 'Unpaid'),
+      work_mode: String(row.work_mode || 'Remote (with occasional team meetings)'),
+      reporting_to: String(row.reporting_to || 'Prithibi Mandi (CTO)'),
+      joining_date: String(row.joining_date),
+      end_date: row.end_date ? String(row.end_date) : null,
+      signatory_name: String(row.signatory_name || 'ANSH TIWARI'),
+      signatory_title: String(row.signatory_title || 'FOUNDER'),
+      company_name: String(row.company_name || 'Go_Repireo'),
+      pdf_storage_path: row.pdf_storage_path ? String(row.pdf_storage_path) : null,
+      sent_at: row.sent_at ? String(row.sent_at) : null,
+      created_at: String(row.created_at),
+      updated_at: String(row.updated_at),
+      created_by: row.created_by ? String(row.created_by) : null,
+      person: row.person_full_name ? {
+        id: String(row.person_id),
+        person_code: String(row.person_code || ''),
+        full_name: String(row.person_full_name),
+        profile_photo_path: row.profile_photo_path ? String(row.profile_photo_path) : null,
+        designation: String(row.person_designation || ''),
+        person_type: 'INTERN',
+        joining_date: '',
+        status: 'ACTIVE',
+        created_at: '',
+        updated_at: '',
+      } : undefined,
+    };
+  },
+
+  async createOfferLetter(params: {
+    personId: string;
+    recipientName: string;
+    recipientEmail: string;
+    recipientPhone?: string | null;
+    recipientLocation?: string | null;
+    position: string;
+    department?: string | null;
+    duration?: string | null;
+    durationMonths?: number;
+    stipend?: string | null;
+    workMode?: string | null;
+    reportingTo?: string | null;
+    joiningDate?: string | null;
+    endDate?: string | null;
+    issueDate?: string | null;
+    signatoryName?: string | null;
+    signatoryTitle?: string | null;
+    companyName?: string | null;
+    actor: { id?: string; name: string };
+  }): Promise<OfferLetter> {
+    await ensureDb();
+    const db = getTursoClient();
+
+    const offerId = `off-${Date.now()}`;
+    const issueDate = params.issueDate || new Date().toISOString().split('T')[0];
+    const letterNumber = await this.generateUniqueOfferLetterNumber(issueDate);
+    const now = new Date().toISOString();
+
+    const joiningDate = params.joiningDate || new Date().toISOString().split('T')[0];
+    const durationMonths = params.durationMonths || 3;
+    let duration = params.duration;
+    let endDate = params.endDate;
+
+    if (!duration || !endDate) {
+      const startD = new Date(joiningDate);
+      const endD = new Date(startD);
+      endD.setMonth(endD.getMonth() + durationMonths);
+      endD.setDate(endD.getDate() - 1);
+      endDate = endD.toISOString().split('T')[0];
+      const startFormatted = startD.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      const endFormatted = endD.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      duration = `${durationMonths} Months (${startFormatted} - ${endFormatted})`;
+    }
+
+    await db.execute({
+      sql: `INSERT INTO offer_letters (
+        id, person_id, letter_number, issue_date, status, recipient_name, recipient_email,
+        recipient_phone, recipient_location, position, department, duration, duration_months,
+        stipend, work_mode, reporting_to, joining_date, end_date, signatory_name, signatory_title,
+        company_name, created_at, updated_at, created_by
+      ) VALUES (?, ?, ?, ?, 'ISSUED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        offerId,
+        params.personId,
+        letterNumber,
+        issueDate,
+        params.recipientName,
+        params.recipientEmail,
+        params.recipientPhone || null,
+        params.recipientLocation || null,
+        params.position,
+        params.department || null,
+        duration,
+        durationMonths,
+        params.stipend || 'Unpaid',
+        params.workMode || 'Remote (with occasional team meetings)',
+        params.reportingTo || 'Prithibi Mandi (CTO)',
+        joiningDate,
+        endDate || null,
+        params.signatoryName || 'ANSH TIWARI',
+        params.signatoryTitle || 'FOUNDER',
+        params.companyName || 'Go_Repireo',
+        now,
+        now,
+        params.actor.id || null,
+      ],
+    });
+
+    await this.logActivity(params.actor, 'OFFER_LETTER_CREATED', 'OFFER_LETTER', offerId, {
+      letter_number: letterNumber,
+      recipient: params.recipientName,
+      position: params.position,
+    });
+
+    const created = await this.getOfferLetterById(offerId);
+    return created!;
+  },
+
+  async updateOfferLetter(
+    id: string,
+    params: Partial<OfferLetter>,
+    actor: { id?: string; name: string }
+  ): Promise<OfferLetter> {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await this.getOfferLetterById(id);
+    if (!existing) throw new Error('Offer letter not found');
+
+    const now = new Date().toISOString();
+
+    await db.execute({
+      sql: `UPDATE offer_letters SET
+        recipient_name = COALESCE(?, recipient_name),
+        recipient_email = COALESCE(?, recipient_email),
+        recipient_phone = ?,
+        recipient_location = ?,
+        position = COALESCE(?, position),
+        department = ?,
+        duration = COALESCE(?, duration),
+        duration_months = COALESCE(?, duration_months),
+        stipend = COALESCE(?, stipend),
+        work_mode = COALESCE(?, work_mode),
+        reporting_to = COALESCE(?, reporting_to),
+        joining_date = COALESCE(?, joining_date),
+        end_date = ?,
+        issue_date = COALESCE(?, issue_date),
+        signatory_name = COALESCE(?, signatory_name),
+        signatory_title = COALESCE(?, signatory_title),
+        status = COALESCE(?, status),
+        updated_at = ?
+      WHERE id = ?`,
+      args: [
+        params.recipient_name ?? null,
+        params.recipient_email ?? null,
+        params.recipient_phone !== undefined ? params.recipient_phone : existing.recipient_phone,
+        params.recipient_location !== undefined ? params.recipient_location : existing.recipient_location,
+        params.position ?? null,
+        params.department !== undefined ? params.department : existing.department,
+        params.duration ?? null,
+        params.duration_months !== undefined ? params.duration_months : existing.duration_months,
+        params.stipend ?? null,
+        params.work_mode ?? null,
+        params.reporting_to ?? null,
+        params.joining_date ?? null,
+        params.end_date !== undefined ? params.end_date : existing.end_date,
+        params.issue_date ?? null,
+        params.signatory_name ?? null,
+        params.signatory_title ?? null,
+        params.status ?? null,
+        now,
+        id,
+      ] as any,
+    });
+
+    await this.logActivity(actor, 'OFFER_LETTER_UPDATED', 'OFFER_LETTER', id, {
+      letter_number: existing.letter_number,
+      recipient: params.recipient_name || existing.recipient_name,
+    });
+
+    const updated = await this.getOfferLetterById(id);
+    return updated!;
+  },
+
+  async markOfferLetterSent(id: string, actor: { id?: string; name: string }): Promise<OfferLetter> {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await this.getOfferLetterById(id);
+    if (!existing) throw new Error('Offer letter not found');
+
+    const now = new Date().toISOString();
+    await db.execute({
+      sql: "UPDATE offer_letters SET status = 'SENT', sent_at = ?, updated_at = ? WHERE id = ?",
+      args: [now, now, id],
+    });
+
+    await this.logActivity(actor, 'OFFER_LETTER_SENT', 'OFFER_LETTER', id, {
+      letter_number: existing.letter_number,
+      recipient: existing.recipient_name,
+      email: existing.recipient_email,
+    });
+
+    const updated = await this.getOfferLetterById(id);
+    return updated!;
+  },
+
+  async deleteOfferLetter(id: string, actor: { id?: string; name: string }): Promise<{ success: boolean; letterNumber: string }> {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await this.getOfferLetterById(id);
+    if (!existing) throw new Error('Offer letter not found');
+
+    await db.execute({
+      sql: 'DELETE FROM offer_letters WHERE id = ?',
+      args: [id],
+    });
+
+    await this.logActivity(actor, 'OFFER_LETTER_DELETED', 'OFFER_LETTER', id, {
+      letter_number: existing.letter_number,
+      recipient: existing.recipient_name,
+    });
+
+    return { success: true, letterNumber: existing.letter_number };
   },
 
   // === PUBLIC VERIFICATION ===

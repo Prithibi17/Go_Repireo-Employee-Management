@@ -87,6 +87,39 @@ export interface Person {
   internships?: Internship[];
   id_cards?: IdCard[];
   certificates?: Certificate[];
+  offer_letters?: OfferLetter[];
+}
+
+export type OfferLetterStatus = 'ISSUED' | 'SENT' | 'ACCEPTED' | 'REVOKED';
+
+export interface OfferLetter {
+  id: string;
+  person_id: string;
+  letter_number: string;
+  issue_date: string;
+  status: OfferLetterStatus;
+  recipient_name: string;
+  recipient_email: string;
+  recipient_phone?: string | null;
+  recipient_location?: string | null;
+  position: string;
+  department?: string | null;
+  duration: string;
+  duration_months?: number;
+  stipend: string;
+  work_mode: string;
+  reporting_to: string;
+  joining_date: string;
+  end_date?: string | null;
+  signatory_name: string;
+  signatory_title: string;
+  company_name: string;
+  pdf_storage_path?: string | null;
+  sent_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
+  person?: Person;
 }
 
 export interface Internship {
