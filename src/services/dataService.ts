@@ -1842,4 +1842,141 @@ export const DataService = {
       created_at: String(row.created_at),
     }));
   },
+
+  // === FACE RECOGNITION AUTHENTICATION ===
+  async getEnrolledFaceAccounts(): Promise<Array<{ id: string; email: string; full_name: string; role: string; descriptor: number[]; thumbnail_url?: string | null; updated_at: string }>> {
+    await ensureDb();
+    const db = getTursoClient();
+    try {
+      const res = await db.execute('SELECT * FROM user_face_credentials ORDER BY updated_at DESC');
+      return res.rows.map((row) => {
+        let descriptor: number[] = [];
+        try {
+          descriptor = JSON.parse(String(row.face_descriptor));
+        } catch {
+          descriptor = [];
+        }
+        return {
+          id: String(row.id),
+          email: String(row.user_email),
+          full_name: String(row.full_name),
+          role: String(row.role || 'VIEWER'),
+          descriptor,
+          thumbnail_url: row.thumbnail_url ? String(row.thumbnail_url) : null,
+          updated_at: String(row.updated_at),
+        };
+      });
+    } catch (e) {
+      console.warn('Error reading user_face_credentials:', e);
+      return [];
+    }
+  },
+
+  async enrollFaceCredential(data: {
+    email: string;
+    full_name: string;
+    role?: string;
+    descriptor: number[];
+    thumbnail_url?: string | null;
+  }): Promise<{ success: boolean; id: string }> {
+    await ensureDb();
+    const db = getTursoClient();
+    const id = `face-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const normalizedEmail = data.email.trim().toLowerCase();
+    const role = data.role || (normalizedEmail === 'owner@gorepireo.in' ? 'OWNER' : normalizedEmail === 'samyaksingh1845@gmail.com' ? 'ADMIN' : 'VIEWER');
+    const descriptorJson = JSON.stringify(data.descriptor);
+
+    await db.execute({
+      sql: `INSERT INTO user_face_credentials (id, user_email, full_name, role, face_descriptor, thumbnail_url, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+            ON CONFLICT(user_email) DO UPDATE SET 
+              full_name = excluded.full_name,
+              role = excluded.role,
+              face_descriptor = excluded.face_descriptor,
+              thumbnail_url = coalesce(excluded.thumbnail_url, user_face_credentials.thumbnail_url),
+              updated_at = datetime('now');`,
+      args: [id, normalizedEmail, data.full_name, role, descriptorJson, data.thumbnail_url || null],
+    });
+
+    return { success: true, id };
+  },
+
+  async deleteFaceCredential(email: string): Promise<boolean> {
+    await ensureDb();
+    const db = getTursoClient();
+    const normalizedEmail = email.trim().toLowerCase();
+    await db.execute({
+      sql: 'DELETE FROM user_face_credentials WHERE lower(user_email) = lower(?)',
+      args: [normalizedEmail],
+    });
+    return true;
+  },
+
+  async verifyFaceLogin(candidateDescriptor: number[], preferredEmail?: string): Promise<{
+    matched: boolean;
+    user?: { email: string; full_name: string; role: string };
+    distance?: number;
+    similarityPercent?: number;
+    error?: string;
+  }> {
+    const enrolled = await this.getEnrolledFaceAccounts();
+    if (enrolled.length === 0) {
+      return { matched: false, error: 'No face accounts are currently enrolled in the system.' };
+    }
+
+    if (!candidateDescriptor || candidateDescriptor.length !== 128) {
+      return { matched: false, error: 'Invalid candidate facial descriptor (expected 128 dimensions).' };
+    }
+
+    // Filter by preferred email if specified, otherwise search all enrolled faces
+    const candidates = preferredEmail 
+      ? enrolled.filter((acc) => acc.email.toLowerCase() === preferredEmail.trim().toLowerCase())
+      : enrolled;
+
+    if (candidates.length === 0) {
+      return { matched: false, error: `No face account found for ${preferredEmail}.` };
+    }
+
+    let bestAccount = candidates[0];
+    let minDistance = 999.0;
+
+    for (const acc of candidates) {
+      if (!acc.descriptor || acc.descriptor.length !== 128) continue;
+      let sum = 0;
+      for (let i = 0; i < 128; i++) {
+        const diff = candidateDescriptor[i] - acc.descriptor[i];
+        sum += diff * diff;
+      }
+      const distance = Math.sqrt(sum);
+      if (distance < minDistance) {
+        minDistance = distance;
+        bestAccount = acc;
+      }
+    }
+
+    // Standard face-api Euclidean distance threshold:
+    // Distance < 0.48 indicates a definite confident match
+    const MATCH_THRESHOLD = 0.48;
+    const similarityPercent = Math.max(0, Math.min(100, Math.round((1 - minDistance * 1.3) * 100)));
+
+    if (minDistance <= MATCH_THRESHOLD) {
+      return {
+        matched: true,
+        user: {
+          email: bestAccount.email,
+          full_name: bestAccount.full_name,
+          role: bestAccount.role,
+        },
+        distance: minDistance,
+        similarityPercent,
+      };
+    }
+
+    return {
+      matched: false,
+      distance: minDistance,
+      similarityPercent,
+      error: `Face did not match any enrolled account (Closest match: ${similarityPercent}%, required > 75%).`,
+    };
+  },
 };

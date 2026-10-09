@@ -190,9 +190,21 @@ export async function initTursoSchema() {
       last_used_at TEXT
     );`,
 
+    `CREATE TABLE IF NOT EXISTS user_face_credentials (
+      id TEXT PRIMARY KEY,
+      user_email TEXT UNIQUE NOT NULL,
+      full_name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'VIEWER',
+      face_descriptor TEXT NOT NULL,
+      thumbnail_url TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );`,
+
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_people_person_code ON people (person_code);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_id_cards_card_number ON id_cards (card_number);`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS idx_certificates_cert_number ON certificates (certificate_number);`
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_certificates_cert_number ON certificates (certificate_number);`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_face_credentials_email ON user_face_credentials (user_email);`
   ]);
 
   // Seed default sequence and initial company config if missing

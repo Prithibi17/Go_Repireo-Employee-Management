@@ -98,6 +98,98 @@ app.get('/api/auth/me', async (c) => {
   return c.json({ success: true, user });
 });
 
+// === FACE BIOMETRIC AUTHENTICATION ===
+app.get('/api/auth/face-accounts', async (c) => {
+  try {
+    const accounts = await DataService.getEnrolledFaceAccounts();
+    return c.json({ success: true, accounts });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+app.post('/api/auth/face-enroll', async (c) => {
+  try {
+    const { email, full_name, role, descriptor, thumbnail_url } = await c.req.json();
+    if (!email || !descriptor || !Array.isArray(descriptor)) {
+      return c.json({ success: false, error: 'Email and 128-d face descriptor vector are required' }, 400);
+    }
+
+    const result = await DataService.enrollFaceCredential({
+      email,
+      full_name: full_name || email.split('@')[0],
+      role,
+      descriptor,
+      thumbnail_url,
+    });
+
+    return c.json({ success: true, message: 'Face successfully enrolled for user account', result });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Face enrollment failed' }, 500);
+  }
+});
+
+app.delete('/api/auth/face-enroll/:email', async (c) => {
+  try {
+    const email = c.req.param('email');
+    await DataService.deleteFaceCredential(email);
+    return c.json({ success: true, message: 'Face credential removed' });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+app.post('/api/auth/face-login', async (c) => {
+  try {
+    const { descriptor, preferredEmail } = await c.req.json();
+    if (!descriptor || !Array.isArray(descriptor) || descriptor.length !== 128) {
+      return c.json({ success: false, error: 'A valid 128-dimensional face descriptor is required' }, 400);
+    }
+
+    const verification = await DataService.verifyFaceLogin(descriptor, preferredEmail);
+    if (!verification.matched || !verification.user) {
+      return c.json({
+        success: false,
+        error: verification.error || 'Face not recognized. Please try again or use password.',
+        similarityPercent: verification.similarityPercent || 0,
+      }, 401);
+    }
+
+    const user = verification.user;
+
+    // Set authentication session cookies
+    setCookie(c, 'gr_auth_session', `session_face_${Date.now()}`, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    setCookie(c, 'gr_user_email', user.email.toLowerCase(), {
+      path: '/',
+      httpOnly: false,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    setCookie(c, 'gr_user_role', user.role, {
+      path: '/',
+      httpOnly: false,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    return c.json({
+      success: true,
+      user,
+      similarityPercent: verification.similarityPercent,
+      redirect: '/dashboard',
+    });
+  } catch (err: any) {
+    console.error('Face login error:', err);
+    return c.json({ success: false, error: 'Face authentication failed', details: err?.message }, 500);
+  }
+});
+
 // === DASHBOARD ===
 app.get('/api/dashboard/metrics', async (c) => {
   try {

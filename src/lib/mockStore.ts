@@ -31,6 +31,16 @@ interface StorageState {
     intern: number;
     certificate: number;
   };
+  faceCredentials: {
+    id: string;
+    user_email: string;
+    full_name: string;
+    role: string;
+    face_descriptor: string;
+    thumbnail_url?: string | null;
+    created_at: string;
+    updated_at: string;
+  }[];
 }
 
 const globalForMock = globalThis as unknown as { mockStore?: StorageState };
@@ -279,7 +289,8 @@ export const mockStore: StorageState = globalForMock.mockStore || {
     employee: 1,
     intern: 2,
     certificate: 0,
-  }
+  },
+  faceCredentials: []
 };
 
 if (process.env.NODE_ENV !== 'production') {

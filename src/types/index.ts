@@ -305,3 +305,25 @@ export interface PromoteInternData {
   reissue_id_card?: boolean;
 }
 
+export interface UserFaceCredential {
+  id: string;
+  user_email: string;
+  full_name: string;
+  role: UserRole;
+  face_descriptor: number[];
+  thumbnail_url?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EnrolledFaceAccount {
+  id: string;
+  email: string;
+  full_name: string;
+  role: UserRole;
+  descriptor: number[];
+  thumbnail_url?: string | null;
+  updated_at: string;
+}
+
+

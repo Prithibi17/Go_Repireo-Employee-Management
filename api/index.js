@@ -46726,9 +46726,20 @@ async function initTursoSchema() {
       created_by TEXT,
       last_used_at TEXT
     );`,
+    `CREATE TABLE IF NOT EXISTS user_face_credentials (
+      id TEXT PRIMARY KEY,
+      user_email TEXT UNIQUE NOT NULL,
+      full_name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'VIEWER',
+      face_descriptor TEXT NOT NULL,
+      thumbnail_url TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_people_person_code ON people (person_code);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_id_cards_card_number ON id_cards (card_number);`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS idx_certificates_cert_number ON certificates (certificate_number);`
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_certificates_cert_number ON certificates (certificate_number);`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_face_credentials_email ON user_face_credentials (user_email);`
   ]);
   await db.execute({
     sql: `INSERT OR IGNORE INTO app_sequences (name, current_value) VALUES 
@@ -48415,6 +48426,112 @@ var DataService = {
       metadata: JSON.parse(String(row.metadata || "{}")),
       created_at: String(row.created_at)
     }));
+  },
+  // === FACE RECOGNITION AUTHENTICATION ===
+  async getEnrolledFaceAccounts() {
+    await ensureDb();
+    const db = getTursoClient();
+    try {
+      const res = await db.execute("SELECT * FROM user_face_credentials ORDER BY updated_at DESC");
+      return res.rows.map((row) => {
+        let descriptor = [];
+        try {
+          descriptor = JSON.parse(String(row.face_descriptor));
+        } catch {
+          descriptor = [];
+        }
+        return {
+          id: String(row.id),
+          email: String(row.user_email),
+          full_name: String(row.full_name),
+          role: String(row.role || "VIEWER"),
+          descriptor,
+          thumbnail_url: row.thumbnail_url ? String(row.thumbnail_url) : null,
+          updated_at: String(row.updated_at)
+        };
+      });
+    } catch (e) {
+      console.warn("Error reading user_face_credentials:", e);
+      return [];
+    }
+  },
+  async enrollFaceCredential(data) {
+    await ensureDb();
+    const db = getTursoClient();
+    const id = `face-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const normalizedEmail = data.email.trim().toLowerCase();
+    const role = data.role || (normalizedEmail === "owner@gorepireo.in" ? "OWNER" : normalizedEmail === "samyaksingh1845@gmail.com" ? "ADMIN" : "VIEWER");
+    const descriptorJson = JSON.stringify(data.descriptor);
+    await db.execute({
+      sql: `INSERT INTO user_face_credentials (id, user_email, full_name, role, face_descriptor, thumbnail_url, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+            ON CONFLICT(user_email) DO UPDATE SET 
+              full_name = excluded.full_name,
+              role = excluded.role,
+              face_descriptor = excluded.face_descriptor,
+              thumbnail_url = coalesce(excluded.thumbnail_url, user_face_credentials.thumbnail_url),
+              updated_at = datetime('now');`,
+      args: [id, normalizedEmail, data.full_name, role, descriptorJson, data.thumbnail_url || null]
+    });
+    return { success: true, id };
+  },
+  async deleteFaceCredential(email3) {
+    await ensureDb();
+    const db = getTursoClient();
+    const normalizedEmail = email3.trim().toLowerCase();
+    await db.execute({
+      sql: "DELETE FROM user_face_credentials WHERE lower(user_email) = lower(?)",
+      args: [normalizedEmail]
+    });
+    return true;
+  },
+  async verifyFaceLogin(candidateDescriptor, preferredEmail) {
+    const enrolled = await this.getEnrolledFaceAccounts();
+    if (enrolled.length === 0) {
+      return { matched: false, error: "No face accounts are currently enrolled in the system." };
+    }
+    if (!candidateDescriptor || candidateDescriptor.length !== 128) {
+      return { matched: false, error: "Invalid candidate facial descriptor (expected 128 dimensions)." };
+    }
+    const candidates = preferredEmail ? enrolled.filter((acc) => acc.email.toLowerCase() === preferredEmail.trim().toLowerCase()) : enrolled;
+    if (candidates.length === 0) {
+      return { matched: false, error: `No face account found for ${preferredEmail}.` };
+    }
+    let bestAccount = candidates[0];
+    let minDistance = 999;
+    for (const acc of candidates) {
+      if (!acc.descriptor || acc.descriptor.length !== 128) continue;
+      let sum = 0;
+      for (let i = 0; i < 128; i++) {
+        const diff = candidateDescriptor[i] - acc.descriptor[i];
+        sum += diff * diff;
+      }
+      const distance = Math.sqrt(sum);
+      if (distance < minDistance) {
+        minDistance = distance;
+        bestAccount = acc;
+      }
+    }
+    const MATCH_THRESHOLD = 0.48;
+    const similarityPercent = Math.max(0, Math.min(100, Math.round((1 - minDistance * 1.3) * 100)));
+    if (minDistance <= MATCH_THRESHOLD) {
+      return {
+        matched: true,
+        user: {
+          email: bestAccount.email,
+          full_name: bestAccount.full_name,
+          role: bestAccount.role
+        },
+        distance: minDistance,
+        similarityPercent
+      };
+    }
+    return {
+      matched: false,
+      distance: minDistance,
+      similarityPercent,
+      error: `Face did not match any enrolled account (Closest match: ${similarityPercent}%, required > 75%).`
+    };
   }
 };
 
@@ -68486,6 +68603,84 @@ app.post("/api/auth/logout", (c) => {
 app.get("/api/auth/me", async (c) => {
   const user = await getCurrentUser(c);
   return c.json({ success: true, user });
+});
+app.get("/api/auth/face-accounts", async (c) => {
+  try {
+    const accounts = await DataService.getEnrolledFaceAccounts();
+    return c.json({ success: true, accounts });
+  } catch (err) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+app.post("/api/auth/face-enroll", async (c) => {
+  try {
+    const { email: email3, full_name, role, descriptor, thumbnail_url } = await c.req.json();
+    if (!email3 || !descriptor || !Array.isArray(descriptor)) {
+      return c.json({ success: false, error: "Email and 128-d face descriptor vector are required" }, 400);
+    }
+    const result = await DataService.enrollFaceCredential({
+      email: email3,
+      full_name: full_name || email3.split("@")[0],
+      role,
+      descriptor,
+      thumbnail_url
+    });
+    return c.json({ success: true, message: "Face successfully enrolled for user account", result });
+  } catch (err) {
+    return c.json({ success: false, error: err.message || "Face enrollment failed" }, 500);
+  }
+});
+app.delete("/api/auth/face-enroll/:email", async (c) => {
+  try {
+    const email3 = c.req.param("email");
+    await DataService.deleteFaceCredential(email3);
+    return c.json({ success: true, message: "Face credential removed" });
+  } catch (err) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+app.post("/api/auth/face-login", async (c) => {
+  try {
+    const { descriptor, preferredEmail } = await c.req.json();
+    if (!descriptor || !Array.isArray(descriptor) || descriptor.length !== 128) {
+      return c.json({ success: false, error: "A valid 128-dimensional face descriptor is required" }, 400);
+    }
+    const verification = await DataService.verifyFaceLogin(descriptor, preferredEmail);
+    if (!verification.matched || !verification.user) {
+      return c.json({
+        success: false,
+        error: verification.error || "Face not recognized. Please try again or use password.",
+        similarityPercent: verification.similarityPercent || 0
+      }, 401);
+    }
+    const user = verification.user;
+    setCookie(c, "gr_auth_session", `session_face_${Date.now()}`, {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+      maxAge: 60 * 60 * 24 * 7
+    });
+    setCookie(c, "gr_user_email", user.email.toLowerCase(), {
+      path: "/",
+      httpOnly: false,
+      maxAge: 60 * 60 * 24 * 7
+    });
+    setCookie(c, "gr_user_role", user.role, {
+      path: "/",
+      httpOnly: false,
+      maxAge: 60 * 60 * 24 * 7
+    });
+    return c.json({
+      success: true,
+      user,
+      similarityPercent: verification.similarityPercent,
+      redirect: "/dashboard"
+    });
+  } catch (err) {
+    console.error("Face login error:", err);
+    return c.json({ success: false, error: "Face authentication failed", details: err?.message }, 500);
+  }
 });
 app.get("/api/dashboard/metrics", async (c) => {
   try {
