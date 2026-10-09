@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Sidebar } from './Sidebar';
 import { Menu } from 'lucide-react';
@@ -7,6 +7,12 @@ import { Menu } from 'lucide-react';
 export function AppLayout() {
   const { user, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+
+  // Automatically collapse sidebar on mobile whenever the route/URL changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname, location.search]);
 
   if (loading) {
     return (
@@ -25,38 +31,46 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex overflow-x-hidden">
-      {/* Desktop Sidebar (Pinned on left) */}
+      {/* Desktop PC Mode ONLY: Persistent sidebar pinned on left, NO three lines */}
       <div className="hidden lg:flex h-screen sticky top-0 shrink-0">
         <Sidebar currentUser={user} />
       </div>
 
-      {/* Mobile Drawer Overlay & Sidebar */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          {/* Backdrop */}
-          <div 
-            onClick={() => setMobileMenuOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
-          />
+      {/* Mobile Mode ONLY: Collapsing drawer with backdrop, controlled by Three Lines icon */}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${
+          mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        aria-hidden={!mobileMenuOpen}
+      >
+        {/* Backdrop (tap to collapse) */}
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
+        />
 
-          {/* Slide-out Drawer */}
-          <div className="fixed inset-y-0 left-0 max-w-xs w-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
-            <Sidebar currentUser={user} onClose={() => setMobileMenuOpen(false)} />
-          </div>
+        {/* Slide-out Drawer */}
+        <div
+          className={`fixed inset-y-0 left-0 max-w-xs w-full shadow-2xl z-10 transform transition-transform duration-300 ease-in-out ${
+            mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <Sidebar currentUser={user} onClose={() => setMobileMenuOpen(false)} />
         </div>
-      )}
+      </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         {/* Responsive Workspace Top Navigation Bar */}
         <header className="h-14 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Mobile Hamburger Trigger */}
+            {/* Three Lines (Hamburger Icon) - EXCLUSIVELY ON MOBILE (lg:hidden, NEVER on PC mode) */}
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              className="p-1.5 -ml-1 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors lg:hidden cursor-pointer"
-              aria-label="Open mobile navigation"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className="p-2 -ml-1 rounded-lg text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 transition-colors lg:hidden cursor-pointer"
+              aria-label="Toggle mobile menu"
+              title="Toggle Menu"
             >
               <Menu className="w-5 h-5" />
             </button>
