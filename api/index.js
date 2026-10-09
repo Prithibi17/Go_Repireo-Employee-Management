@@ -46775,6 +46775,16 @@ async function initTursoSchema() {
     });
     await db.execute("INSERT OR REPLACE INTO app_sequences (name, current_value) VALUES ('departments_seeded', 1)");
   }
+  try {
+    await db.execute({
+      sql: `INSERT INTO profiles (id, email, full_name, role, is_active, created_at, updated_at) VALUES 
+        ('admin-profile-samyak', 'samyaksingh1845@gmail.com', 'Samyak Singh', 'ADMIN', 1, datetime('now'), datetime('now'))
+        ON CONFLICT(email) DO UPDATE SET role = 'ADMIN', full_name = 'Samyak Singh', updated_at = datetime('now');`,
+      args: []
+    });
+  } catch (err) {
+    console.warn("Could not seed Samyak Singh profile:", err);
+  }
 }
 
 // src/lib/tokens.ts
@@ -68160,7 +68170,7 @@ async function getCurrentUser(c) {
   try {
     const db = getTursoClient();
     const res = await db.execute({
-      sql: "SELECT * FROM profiles WHERE email = ? LIMIT 1",
+      sql: "SELECT * FROM profiles WHERE lower(email) = lower(?) LIMIT 1",
       args: [sessionEmail]
     });
     if (res.rows.length > 0) {
@@ -68173,26 +68183,29 @@ async function getCurrentUser(c) {
         avatar_url: p.avatar_url ? String(p.avatar_url) : null
       };
     } else {
-      const id = `prof-${Date.now()}`;
-      const fullName = sessionEmail.includes("owner") ? "Prithibi Mandi" : "Authorized User";
+      const isSamyak = sessionEmail.toLowerCase() === "samyaksingh1845@gmail.com";
+      const id = isSamyak ? "admin-profile-samyak" : `prof-${Date.now()}`;
+      const fullName = isSamyak ? "Samyak Singh" : sessionEmail.includes("owner") ? "Prithibi Mandi" : "Authorized User";
+      const roleToUse = isSamyak ? "ADMIN" : sessionRole;
       await db.execute({
         sql: `INSERT OR IGNORE INTO profiles (id, email, full_name, role, is_active, created_at, updated_at)
               VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))`,
-        args: [id, sessionEmail, fullName, sessionRole]
+        args: [id, sessionEmail, fullName, roleToUse]
       });
       return {
         id,
         email: sessionEmail,
         full_name: fullName,
-        role: sessionRole
+        role: roleToUse
       };
     }
   } catch {
+    const isSamyak = sessionEmail.toLowerCase() === "samyaksingh1845@gmail.com";
     return {
-      id: "owner-1",
+      id: isSamyak ? "admin-profile-samyak" : "owner-1",
       email: sessionEmail,
-      full_name: "Prithibi Mandi",
-      role: sessionRole
+      full_name: isSamyak ? "Samyak Singh" : "Prithibi Mandi",
+      role: isSamyak ? "ADMIN" : sessionRole
     };
   }
 }
@@ -68206,6 +68219,9 @@ function canManageSettings(role) {
   return ["OWNER", "ADMIN"].includes(role);
 }
 function canManageUsers(role) {
+  return role === "OWNER";
+}
+function canManageApiKeys(role) {
   return role === "OWNER";
 }
 
@@ -68401,7 +68417,43 @@ app.post("/api/auth/login", async (c) => {
     if (!email3) {
       return c.json({ success: false, error: "Email is required" }, 400);
     }
-    const assignedRole = role || (email3.includes("admin") ? "ADMIN" : email3.includes("manager") ? "PEOPLE_MANAGER" : "OWNER");
+    const normalizedEmail = String(email3).trim().toLowerCase();
+    if (normalizedEmail === "samyaksingh1845@gmail.com") {
+      const trimmedPass = String(password || "").trim();
+      if (trimmedPass !== "samyaksingh1845@gmail.com") {
+        return c.json({ success: false, error: "Invalid password. Password must be your Gmail address." }, 401);
+      }
+    }
+    let assignedRole = "OWNER";
+    if (normalizedEmail === "samyaksingh1845@gmail.com") {
+      assignedRole = "ADMIN";
+      try {
+        const db = getTursoClient();
+        await db.execute({
+          sql: `INSERT INTO profiles (id, email, full_name, role, is_active, created_at, updated_at)
+                VALUES ('admin-profile-samyak', 'samyaksingh1845@gmail.com', 'Samyak Singh', 'ADMIN', 1, datetime('now'), datetime('now'))
+                ON CONFLICT(email) DO UPDATE SET role = 'ADMIN', full_name = 'Samyak Singh', updated_at = datetime('now');`,
+          args: []
+        });
+      } catch (e) {
+        console.warn("Profile sync warning for Samyak Singh:", e);
+      }
+    } else {
+      try {
+        const db = getTursoClient();
+        const res = await db.execute({
+          sql: "SELECT role FROM profiles WHERE lower(email) = lower(?) LIMIT 1",
+          args: [normalizedEmail]
+        });
+        if (res.rows.length > 0 && res.rows[0].role) {
+          assignedRole = String(res.rows[0].role);
+        } else {
+          assignedRole = role || (normalizedEmail.includes("admin") ? "ADMIN" : normalizedEmail.includes("manager") ? "PEOPLE_MANAGER" : "OWNER");
+        }
+      } catch {
+        assignedRole = role || (normalizedEmail.includes("admin") ? "ADMIN" : normalizedEmail.includes("manager") ? "PEOPLE_MANAGER" : "OWNER");
+      }
+    }
     setCookie(c, "gr_auth_session", `session_${Date.now()}`, {
       path: "/",
       httpOnly: true,
@@ -68409,7 +68461,7 @@ app.post("/api/auth/login", async (c) => {
       sameSite: "Lax",
       maxAge: 60 * 60 * 24 * 7
     });
-    setCookie(c, "gr_user_email", email3, {
+    setCookie(c, "gr_user_email", normalizedEmail, {
       path: "/",
       httpOnly: false,
       maxAge: 60 * 60 * 24 * 7
@@ -68834,8 +68886,8 @@ app.put("/api/users/role", async (c) => {
 app.get("/api/api-keys", async (c) => {
   try {
     const currentUser = await getCurrentUser(c);
-    if (!canManageSettings(currentUser.role)) {
-      return c.json({ success: false, error: "Unauthorized" }, 403);
+    if (!canManageApiKeys(currentUser.role)) {
+      return c.json({ success: false, error: "Only owners can access and view API keys" }, 403);
     }
     const apiKeys = await DataService.getApiKeys();
     return c.json({ success: true, apiKeys });
@@ -68846,8 +68898,8 @@ app.get("/api/api-keys", async (c) => {
 app.post("/api/api-keys", async (c) => {
   try {
     const currentUser = await getCurrentUser(c);
-    if (!canManageSettings(currentUser.role)) {
-      return c.json({ success: false, error: "Unauthorized to create API keys" }, 403);
+    if (!canManageApiKeys(currentUser.role)) {
+      return c.json({ success: false, error: "Only owners can create API keys" }, 403);
     }
     const { name } = await c.req.json();
     if (!name || !name.trim()) {
@@ -68865,8 +68917,8 @@ app.post("/api/api-keys", async (c) => {
 app.delete("/api/api-keys/:id", async (c) => {
   try {
     const currentUser = await getCurrentUser(c);
-    if (!canManageSettings(currentUser.role)) {
-      return c.json({ success: false, error: "Unauthorized to delete API keys" }, 403);
+    if (!canManageApiKeys(currentUser.role)) {
+      return c.json({ success: false, error: "Only owners can delete API keys" }, 403);
     }
     const id = c.req.param("id");
     const deleted = await DataService.deleteApiKey(id, {

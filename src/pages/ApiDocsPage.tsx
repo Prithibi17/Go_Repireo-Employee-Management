@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { 
   Code2, Key, Copy, Check, ExternalLink, Terminal, 
   Sparkles, Layers, QrCode, Play, Eye, Trash2, Plus
@@ -6,6 +8,12 @@ import {
 import { ApiKey } from '@/types';
 
 export function ApiDocsPage() {
+  const { user } = useAuth();
+
+  if (user && user.role !== 'OWNER') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const [activeTab, setActiveTab] = useState<'endpoints' | 'tester' | 'keys'>('endpoints');
   const [copiedText, setCopiedText] = useState<string | null>(null);
 

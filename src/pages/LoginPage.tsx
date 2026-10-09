@@ -118,6 +118,33 @@ export function LoginPage() {
                 </>
               )}
             </button>
+            <div className="pt-2 border-t border-zinc-800/60 mt-3">
+              <p className="text-[11px] text-zinc-500 mb-2 font-medium">Quick Select Account:</p>
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('samyaksingh1845@gmail.com');
+                    setPassword('samyaksingh1845@gmail.com');
+                  }}
+                  className="p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-left transition cursor-pointer"
+                >
+                  <p className="text-zinc-200 font-semibold truncate">Samyak Singh</p>
+                  <p className="text-indigo-400 text-[10px] uppercase font-mono font-medium">Admin</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('owner@gorepireo.in');
+                    setPassword('password123');
+                  }}
+                  className="p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-left transition cursor-pointer"
+                >
+                  <p className="text-zinc-200 font-semibold truncate">Prithibi Mandi</p>
+                  <p className="text-amber-400 text-[10px] uppercase font-mono font-medium">Owner</p>
+                </button>
+              </div>
+            </div>
           </form>
 
           <div className="mt-6 pt-5 border-t border-zinc-800/60 flex items-center justify-between text-[11px] text-zinc-500">

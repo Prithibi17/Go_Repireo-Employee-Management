@@ -244,4 +244,16 @@ export async function initTursoSchema() {
     });
     await db.execute("INSERT OR REPLACE INTO app_sequences (name, current_value) VALUES ('departments_seeded', 1)");
   }
+
+  // Ensure Admin profile for Samyak Singh
+  try {
+    await db.execute({
+      sql: `INSERT INTO profiles (id, email, full_name, role, is_active, created_at, updated_at) VALUES 
+        ('admin-profile-samyak', 'samyaksingh1845@gmail.com', 'Samyak Singh', 'ADMIN', 1, datetime('now'), datetime('now'))
+        ON CONFLICT(email) DO UPDATE SET role = 'ADMIN', full_name = 'Samyak Singh', updated_at = datetime('now');`,
+      args: []
+    });
+  } catch (err) {
+    console.warn('Could not seed Samyak Singh profile:', err);
+  }
 }

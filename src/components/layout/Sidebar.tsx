@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
-  LayoutDashboard, Users, UserCheck, GraduationCap, 
+  LayoutDashboard, Users, 
   CreditCard, Award, ShieldCheck, Settings, LogOut,
   ChevronRight, Building2, Code2
 } from 'lucide-react';
@@ -31,9 +31,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
     {
       group: 'People',
       items: [
-        { name: 'Employees', href: '/people?type=EMPLOYEE', icon: UserCheck },
-        { name: 'Interns', href: '/people?type=INTERN', icon: GraduationCap },
-        { name: 'All People', href: '/people', icon: Users },
+        { name: 'People', href: '/people', icon: Users },
       ],
     },
     {
@@ -47,7 +45,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
       group: 'Administration',
       items: [
         { name: 'Users & Access', href: '/settings/users', icon: ShieldCheck },
-        { name: 'API & Endpoints', href: '/api-docs', icon: Code2 },
+        ...(currentUser.role === 'OWNER' ? [{ name: 'API & Endpoints', href: '/api-docs', icon: Code2 }] : []),
         { name: 'Settings', href: '/settings', icon: Settings },
       ],
     },
@@ -84,7 +82,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
               const Icon = item.icon;
               const isActive = item.href.includes('?') 
                 ? currentPathWithSearch === item.href 
-                : pathname === item.href || (item.href !== '/dashboard' && item.href !== '/people' && pathname.startsWith(item.href));
+                : pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.name}

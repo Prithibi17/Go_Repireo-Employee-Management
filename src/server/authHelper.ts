@@ -18,7 +18,7 @@ export async function getCurrentUser(c: Context): Promise<CurrentUser> {
   try {
     const db = getTursoClient();
     const res = await db.execute({
-      sql: 'SELECT * FROM profiles WHERE email = ? LIMIT 1',
+      sql: 'SELECT * FROM profiles WHERE lower(email) = lower(?) LIMIT 1',
       args: [sessionEmail],
     });
 
@@ -32,26 +32,29 @@ export async function getCurrentUser(c: Context): Promise<CurrentUser> {
         avatar_url: p.avatar_url ? String(p.avatar_url) : null,
       };
     } else {
-      const id = `prof-${Date.now()}`;
-      const fullName = sessionEmail.includes('owner') ? 'Prithibi Mandi' : 'Authorized User';
+      const isSamyak = sessionEmail.toLowerCase() === 'samyaksingh1845@gmail.com';
+      const id = isSamyak ? 'admin-profile-samyak' : `prof-${Date.now()}`;
+      const fullName = isSamyak ? 'Samyak Singh' : sessionEmail.includes('owner') ? 'Prithibi Mandi' : 'Authorized User';
+      const roleToUse = isSamyak ? 'ADMIN' : sessionRole;
       await db.execute({
         sql: `INSERT OR IGNORE INTO profiles (id, email, full_name, role, is_active, created_at, updated_at)
               VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))`,
-        args: [id, sessionEmail, fullName, sessionRole],
+        args: [id, sessionEmail, fullName, roleToUse],
       });
       return {
         id,
         email: sessionEmail,
         full_name: fullName,
-        role: sessionRole,
+        role: roleToUse,
       };
     }
   } catch {
+    const isSamyak = sessionEmail.toLowerCase() === 'samyaksingh1845@gmail.com';
     return {
-      id: 'owner-1',
+      id: isSamyak ? 'admin-profile-samyak' : 'owner-1',
       email: sessionEmail,
-      full_name: 'Prithibi Mandi',
-      role: sessionRole,
+      full_name: isSamyak ? 'Samyak Singh' : 'Prithibi Mandi',
+      role: isSamyak ? 'ADMIN' : sessionRole,
     };
   }
 }
@@ -69,5 +72,9 @@ export function canManageSettings(role: UserRole): boolean {
 }
 
 export function canManageUsers(role: UserRole): boolean {
+  return role === 'OWNER';
+}
+
+export function canManageApiKeys(role: UserRole): boolean {
   return role === 'OWNER';
 }

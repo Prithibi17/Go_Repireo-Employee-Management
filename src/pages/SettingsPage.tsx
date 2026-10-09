@@ -30,12 +30,14 @@ export function SettingsPage() {
   }
 
   const canEdit = Boolean(user && ['OWNER', 'ADMIN'].includes(user.role));
+  const isOwner = Boolean(user && user.role === 'OWNER');
 
   return (
     <SettingsClient
       settings={data.settings}
       departments={data.departments || []}
       canEdit={canEdit}
+      isOwner={isOwner}
       onRefresh={loadSettings}
     />
   );

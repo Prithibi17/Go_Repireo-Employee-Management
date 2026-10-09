@@ -7,10 +7,11 @@ interface SettingsClientProps {
   settings: CompanySettings;
   departments: Department[];
   canEdit: boolean;
+  isOwner?: boolean;
   onRefresh?: () => void;
 }
 
-export function SettingsClient({ settings, departments, canEdit, onRefresh }: SettingsClientProps) {
+export function SettingsClient({ settings, departments, canEdit, isOwner = false, onRefresh }: SettingsClientProps) {
   const [formData, setFormData] = useState({
     company_name: settings.company_name,
     legal_name: settings.legal_name || '',
@@ -58,8 +59,10 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
   };
 
   useEffect(() => {
-    loadApiKeys();
-  }, []);
+    if (isOwner) {
+      loadApiKeys();
+    }
+  }, [isOwner]);
 
   const handleCreateApiKey = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -394,8 +397,10 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
         </div>
       </div>
 
-      {/* 5. API Keys & Integrations */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-5">
+      {/* 5. API Keys & Integrations (Owner-Only) */}
+      {isOwner && (
+        <>
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-2">
@@ -568,6 +573,8 @@ export function SettingsClient({ settings, departments, canEdit, onRefresh }: Se
             )}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

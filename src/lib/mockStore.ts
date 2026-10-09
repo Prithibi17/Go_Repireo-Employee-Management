@@ -76,6 +76,16 @@ export const mockStore: StorageState = globalForMock.mockStore || {
       updated_at: '2026-01-01',
     },
     {
+      id: 'admin-profile-samyak',
+      email: 'samyaksingh1845@gmail.com',
+      full_name: 'Samyak Singh',
+      role: 'ADMIN',
+      is_active: true,
+      avatar_url: null,
+      created_at: '2026-03-01',
+      updated_at: '2026-03-01',
+    },
+    {
       id: 'admin-profile-2',
       email: 'admin@gorepireo.in',
       full_name: 'Ananya Roy',
