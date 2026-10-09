@@ -82,7 +82,9 @@ export function Sidebar({ currentUser }: SidebarProps) {
               const Icon = item.icon;
               const isActive = item.href.includes('?') 
                 ? currentPathWithSearch === item.href 
-                : pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                : item.href === '/dashboard' || item.href === '/settings'
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
                 <Link
                   key={item.name}
