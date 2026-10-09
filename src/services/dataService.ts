@@ -1955,8 +1955,8 @@ export const DataService = {
     }
 
     // Standard face-api Euclidean distance threshold:
-    // Distance <= 0.52 indicates a confident match while eliminating false positives
-    const MATCH_THRESHOLD = 0.52;
+    // Distance <= 0.55 provides robust real-time match while safely rejecting non-enrolled persons
+    const MATCH_THRESHOLD = 0.55;
     const similarityPercent = Math.max(0, Math.min(100, Math.round((1 - minDistance * 0.9) * 100)));
 
     if (minDistance <= MATCH_THRESHOLD) {

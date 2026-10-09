@@ -173,7 +173,7 @@ export function FaceEnrollModal({
           setStatusMessage('Face detected! Click "Capture Face" below to enroll.');
         } else {
           setFaceDetected(false);
-          setStatusMessage('Align your face in the center of the frame...');
+          setStatusMessage('Face the camera to capture...');
         }
       } catch {
         // detection tick error - proceed
@@ -391,15 +391,7 @@ export function FaceEnrollModal({
                 />
 
                 {/* Biometric Scanning Overlay Reticle */}
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div
-                    className={`w-48 h-56 rounded-2xl border-2 transition-all duration-300 ${
-                      faceDetected
-                        ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.3)]'
-                        : 'border-zinc-600 border-dashed'
-                    }`}
-                  />
-                </div>
+                <div className="absolute inset-0 pointer-events-none rounded-xl ring-2 transition-all duration-300 ring-inset ring-white/10" />
 
                 {/* Status Badge */}
                 <div className="absolute bottom-3 inset-x-3 text-center pointer-events-none">

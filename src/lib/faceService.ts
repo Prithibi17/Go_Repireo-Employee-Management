@@ -53,8 +53,8 @@ export async function detectFaceDescriptor(
   const options =
     customOptions ||
     new faceapi.TinyFaceDetectorOptions({
-      inputSize: 224,
-      scoreThreshold: 0.35,
+      inputSize: 320,
+      scoreThreshold: 0.25,
     });
 
   const result = await faceapi
@@ -106,7 +106,7 @@ export interface MatchResult {
 export function findBestMatchingAccount(
   candidateDescriptor: number[],
   enrolledAccounts: EnrolledFaceAccount[],
-  threshold = 0.52
+  threshold = 0.55
 ): MatchResult {
   if (!candidateDescriptor || enrolledAccounts.length === 0) {
     return {

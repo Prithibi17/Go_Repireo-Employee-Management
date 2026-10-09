@@ -29,6 +29,7 @@ export function FaceLoginScanner({
   const consecutiveMatchesRef = useRef<number>(0);
   const lastMatchedEmailRef = useRef<string | null>(null);
   const isLoggingInRef = useRef<boolean>(false);
+  const enrolledAccountsRef = useRef<EnrolledFaceAccount[]>([]);
 
   // 1. Fetch enrolled accounts from server
   const fetchEnrolledAccounts = async () => {
@@ -36,6 +37,7 @@ export function FaceLoginScanner({
       const res = await fetch('/api/auth/face-accounts');
       const data = await res.json();
       if (data.success && Array.isArray(data.accounts)) {
+        enrolledAccountsRef.current = data.accounts;
         setEnrolledAccounts(data.accounts);
         if (data.accounts.length === 0) {
           setNoFacesEnrolled(true);
@@ -143,10 +145,15 @@ export function FaceLoginScanner({
         try {
           const result = await detectFaceDescriptor(videoRef.current);
           if (result && result.descriptor) {
-            setStatusMessage('Analyzing biometric landmarks...');
+            const currentEnrolled = enrolledAccountsRef.current;
+            if (currentEnrolled.length === 0) {
+              setStatusMessage('Loading biometric profiles...');
+              animFrameRef.current = requestAnimationFrame(loop);
+              return;
+            }
 
-            // Match candidate face against all enrolled accounts
-            const match = findBestMatchingAccount(result.descriptor, enrolledAccounts);
+            // Match candidate face against enrolled accounts anywhere across camera view
+            const match = findBestMatchingAccount(result.descriptor, currentEnrolled, 0.55);
 
             if (match.isMatch && match.matchedAccount) {
               const account = match.matchedAccount;
@@ -159,24 +166,17 @@ export function FaceLoginScanner({
                   role: account.role,
                   matchPercent: match.similarityPercent,
                 });
-                setStatusMessage(`Recognized: ${account.full_name} (${match.similarityPercent}% match)`);
+                setStatusMessage(`Identified: ${account.full_name} (${match.similarityPercent}% match)`);
 
                 // Send verified login to server
                 await executeFaceLogin(result.descriptor, account.email);
                 return;
               }
             } else {
-              consecutiveMatchesRef.current = 0;
-              lastMatchedEmailRef.current = null;
-              if (match.minDistance < 0.65) {
-                setStatusMessage(`Scanning face... (${match.similarityPercent}% match)`);
-              } else {
-                setStatusMessage('Align your face in the center...');
-              }
+              setStatusMessage(`Scanning face... (${match.similarityPercent}% match)`);
             }
           } else {
-            consecutiveMatchesRef.current = 0;
-            setStatusMessage('Looking for face...');
+            setStatusMessage('Ready • Face the camera to log in');
           }
         } catch (e) {
           // ignore transient frame error
@@ -257,29 +257,23 @@ export function FaceLoginScanner({
               className="w-full h-full object-cover -scale-x-100"
             />
 
-            {/* Scanning Overlay Reticle */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              {matchedUser ? (
-                <div className="w-52 h-60 rounded-2xl border-2 border-emerald-400 bg-emerald-500/10 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in-95 duration-200 shadow-[0_0_30px_rgba(52,211,153,0.3)]">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500 text-zinc-950 flex items-center justify-center mb-2 shadow-md">
-                    <CheckCircle2 className="w-7 h-7" />
+            {/* Active Recognition Overlay */}
+            <div className="absolute inset-0 pointer-events-none">
+              {matchedUser && (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+                  <div className="w-56 rounded-2xl border-2 border-emerald-400 bg-zinc-900/95 flex flex-col items-center justify-center p-5 text-center shadow-[0_0_40px_rgba(52,211,153,0.35)]">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500 text-zinc-950 flex items-center justify-center mb-2.5 shadow-md">
+                      <CheckCircle2 className="w-7 h-7" />
+                    </div>
+                    <p className="text-sm font-bold text-white leading-tight">{matchedUser.name}</p>
+                    <p className="text-[11px] font-mono text-emerald-300 uppercase tracking-wider mt-1 font-semibold">
+                      {matchedUser.role} • {matchedUser.matchPercent}% Match
+                    </p>
+                    <p className="text-xs text-zinc-300 mt-2.5 font-medium flex items-center gap-1.5">
+                      <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
+                      Logging in...
+                    </p>
                   </div>
-                  <p className="text-xs font-bold text-white leading-tight">{matchedUser.name}</p>
-                  <p className="text-[10px] font-mono text-emerald-300 uppercase tracking-wider mt-0.5 font-semibold">
-                    {matchedUser.role} • {matchedUser.matchPercent}% Match
-                  </p>
-                  <p className="text-[10px] text-zinc-300 mt-2 font-medium">Logging in...</p>
-                </div>
-              ) : (
-                <div className="relative w-48 h-56">
-                  {/* Subtle Corner Brackets */}
-                  <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-zinc-400 rounded-tl-lg" />
-                  <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-zinc-400 rounded-tr-lg" />
-                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-zinc-400 rounded-bl-lg" />
-                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-zinc-400 rounded-br-lg" />
-
-                  {/* Scanning beam line */}
-                  <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse top-1/2 -translate-y-1/2 opacity-70" />
                 </div>
               )}
             </div>
