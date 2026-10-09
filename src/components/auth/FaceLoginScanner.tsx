@@ -138,8 +138,8 @@ export function FaceLoginScanner({
       }
 
       tickCount++;
-      // Process every 3rd frame to keep CPU light, fast, and smooth
-      if (tickCount % 3 === 0) {
+      // Process every 2nd frame for rapid recognition and minimal input latency
+      if (tickCount % 2 === 0) {
         try {
           const result = await detectFaceDescriptor(videoRef.current);
           if (result && result.descriptor) {
@@ -158,8 +158,12 @@ export function FaceLoginScanner({
                 consecutiveMatchesRef.current = 1;
               }
 
-              // Require 2 consecutive matching frames to prevent accidental triggers
-              if (consecutiveMatchesRef.current >= 2 && !isLoggingInRef.current) {
+              // Fast-path instant verification: 1 high-confidence frame (>=68%) or 2 consecutive frames
+              const isConfirmed =
+                consecutiveMatchesRef.current >= 2 ||
+                (consecutiveMatchesRef.current >= 1 && match.similarityPercent >= 68);
+
+              if (isConfirmed && !isLoggingInRef.current) {
                 isLoggingInRef.current = true;
                 setScanning(false);
                 setMatchedUser({
@@ -211,7 +215,7 @@ export function FaceLoginScanner({
         setStatusMessage(`Authentication Verified! Welcome, ${data.user.full_name}.`);
         setTimeout(() => {
           onLoginSuccess(data.user);
-        }, 800);
+        }, 400);
       } else {
         isLoggingInRef.current = false;
         setScanning(true);

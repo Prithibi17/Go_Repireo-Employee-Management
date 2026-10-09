@@ -45,14 +45,17 @@ export interface FaceDetectionResult {
 }
 
 export async function detectFaceDescriptor(
-  input: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement
+  input: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
+  customOptions?: faceapi.TinyFaceDetectorOptions
 ): Promise<FaceDetectionResult | null> {
   await loadFaceModels();
 
-  const options = new faceapi.TinyFaceDetectorOptions({
-    inputSize: 320,
-    scoreThreshold: 0.5,
-  });
+  const options =
+    customOptions ||
+    new faceapi.TinyFaceDetectorOptions({
+      inputSize: 224,
+      scoreThreshold: 0.35,
+    });
 
   const result = await faceapi
     .detectSingleFace(input, options)
