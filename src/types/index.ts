@@ -94,7 +94,7 @@ export type OfferLetterStatus = 'ISSUED' | 'SENT' | 'ACCEPTED' | 'REVOKED';
 
 export interface OfferLetter {
   id: string;
-  person_id: string;
+  person_id?: string | null;
   letter_number: string;
   issue_date: string;
   status: OfferLetterStatus;

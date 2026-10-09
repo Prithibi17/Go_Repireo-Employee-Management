@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { OfferLetterListTable } from '@/components/documents/OfferLetterListTable';
+import { OfferLetterFormModal } from '@/components/documents/OfferLetterFormModal';
 import { useAuth } from '@/context/AuthContext';
 import { OfferLetter } from '@/types';
-import { FileText, Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 
 export function OfferLettersPage() {
   const { user } = useAuth();
   const [offerLetters, setOfferLetters] = useState<OfferLetter[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const loadOfferLetters = useCallback(() => {
     setLoading(true);
@@ -38,13 +39,15 @@ export function OfferLettersPage() {
           </p>
         </div>
 
-        <Link
-          to="/people"
-          className="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-xs transition"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Select Candidate to Issue Offer
-        </Link>
+        {canManage && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Generate Offer Letter
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -56,6 +59,19 @@ export function OfferLettersPage() {
           offerLetters={offerLetters}
           canManage={canManage}
           onRefresh={loadOfferLetters}
+          onCreateNew={() => setShowCreateModal(true)}
+        />
+      )}
+
+      {/* Offer Letter Form Modal */}
+      {showCreateModal && (
+        <OfferLetterFormModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            loadOfferLetters();
+          }}
         />
       )}
     </div>

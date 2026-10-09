@@ -161,10 +161,6 @@ export function OfferLetterFormModal({
     setLoading(true);
 
     try {
-      if (!isEditing && !person?.id) {
-        throw new Error('A candidate must be selected to generate an offer letter');
-      }
-
       const endpoint = isEditing ? `/api/offer-letters/${existingOffer?.id}` : '/api/offer-letters';
       const method = isEditing ? 'PUT' : 'POST';
 
@@ -189,7 +185,7 @@ export function OfferLetterFormModal({
             company_name: formData.companyName,
           }
         : {
-            personId: person!.id,
+            personId: person?.id || null,
             recipientName: formData.recipientName,
             recipientEmail: formData.recipientEmail,
             recipientPhone: formData.recipientPhone,

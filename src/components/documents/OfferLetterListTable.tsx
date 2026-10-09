@@ -10,12 +10,14 @@ interface OfferLetterListTableProps {
   offerLetters: OfferLetter[];
   canManage: boolean;
   onRefresh?: () => void;
+  onCreateNew?: () => void;
 }
 
 export function OfferLetterListTable({
   offerLetters,
   canManage,
   onRefresh,
+  onCreateNew,
 }: OfferLetterListTableProps) {
   const [selectedOffer, setSelectedOffer] = useState<OfferLetter | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -50,9 +52,9 @@ export function OfferLetterListTable({
       <EmptyState
         icon={FileText}
         title="No offer letters generated yet"
-        description="Select a candidate or employee from the People directory to generate an official employment offer letter."
-        actionHref="/people"
-        actionLabel="Go to People Directory"
+        description="Create an official vector PDF offer letter by filling out the candidate details and terms directly."
+        onAction={onCreateNew}
+        actionLabel="Generate Offer Letter"
       />
     );
   }

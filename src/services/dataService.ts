@@ -1541,7 +1541,7 @@ export const DataService = {
   },
 
   async createOfferLetter(params: {
-    personId: string;
+    personId?: string | null;
     recipientName: string;
     recipientEmail: string;
     recipientPhone?: string | null;
@@ -1563,6 +1563,21 @@ export const DataService = {
   }): Promise<OfferLetter> {
     await ensureDb();
     const db = getTursoClient();
+
+    let personId = params.personId || null;
+    if (!personId && params.recipientEmail) {
+      try {
+        const match = await db.execute({
+          sql: 'SELECT id FROM people WHERE lower(personal_email) = lower(?) OR lower(company_email) = lower(?) LIMIT 1',
+          args: [params.recipientEmail.trim(), params.recipientEmail.trim()],
+        });
+        if (match.rows.length > 0) {
+          personId = String(match.rows[0].id);
+        }
+      } catch {
+        // ignore
+      }
+    }
 
     const offerId = `off-${Date.now()}`;
     const issueDate = params.issueDate || new Date().toISOString().split('T')[0];
@@ -1594,7 +1609,7 @@ export const DataService = {
       ) VALUES (?, ?, ?, ?, 'ISSUED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         offerId,
-        params.personId,
+        personId,
         letterNumber,
         issueDate,
         params.recipientName,
