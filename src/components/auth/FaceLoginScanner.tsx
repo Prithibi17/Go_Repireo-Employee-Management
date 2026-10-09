@@ -15,7 +15,7 @@ export function FaceLoginScanner({
   const [enrolledAccounts, setEnrolledAccounts] = useState<EnrolledFaceAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [cameraActive, setCameraActive] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Biometric engine ready');
+  const [statusMessage, setStatusMessage] = useState('Starting Face Biometrics...');
   const [scanning, setScanning] = useState(true);
   const [matchedUser, setMatchedUser] = useState<{ name: string; role: string; matchPercent: number } | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -48,7 +48,7 @@ export function FaceLoginScanner({
     return [];
   };
 
-  // 2. Preload face models and accounts (without starting camera)
+  // 2. Preload face models and automatically start camera
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -63,7 +63,8 @@ export function FaceLoginScanner({
         if (accounts.length === 0) {
           setStatusMessage('No face accounts enrolled.');
         } else {
-          setStatusMessage('Ready to scan');
+          // Automatically start camera without requiring any manual clicks
+          startCamera();
         }
       })
       .catch((err) => {
@@ -139,7 +140,7 @@ export function FaceLoginScanner({
       videoRef.current.srcObject = null;
     }
     setCameraActive(false);
-    setStatusMessage('Ready to scan');
+    setStatusMessage('Camera stopped');
   };
 
   // 3. Real-time recognition loop
@@ -189,7 +190,7 @@ export function FaceLoginScanner({
               setStatusMessage(`Scanning face... (${match.similarityPercent}% match)`);
             }
           } else {
-            setStatusMessage('Ready • Face the camera to log in');
+            setStatusMessage('Ready • Look at the camera to log in');
           }
         } catch (e) {
           // ignore transient frame error
@@ -238,7 +239,7 @@ export function FaceLoginScanner({
         {loading ? (
           <div className="text-center p-6 space-y-3">
             <RefreshCw className="w-6 h-6 animate-spin text-zinc-400 mx-auto" />
-            <p className="text-xs text-zinc-400 font-medium">Initializing Biometrics...</p>
+            <p className="text-xs text-zinc-400 font-medium">Starting Face Biometrics...</p>
           </div>
         ) : noFacesEnrolled ? (
           <div className="text-center p-6 space-y-3">
@@ -253,15 +254,15 @@ export function FaceLoginScanner({
             </div>
           </div>
         ) : !cameraActive ? (
-          /* Manual Start State - Camera is OFF until clicked */
+          /* Camera Inactive / Denied State */
           <div className="text-center p-6 space-y-4">
             <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 text-cyan-400 mx-auto flex items-center justify-center shadow-lg">
               <Scan className="w-8 h-8" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-zinc-100">Face ID Sign-In</p>
+              <p className="text-sm font-semibold text-zinc-100">Camera Paused</p>
               <p className="text-xs text-zinc-400 mt-1 max-w-[260px] mx-auto">
-                Position yourself in front of the camera and click start to verify your identity.
+                Camera is currently turned off. Click below to resume face scanning.
               </p>
             </div>
             <button
@@ -270,7 +271,7 @@ export function FaceLoginScanner({
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-zinc-950 text-xs font-semibold hover:bg-zinc-200 transition cursor-pointer shadow-md active:scale-98"
             >
               <Camera className="w-4 h-4 text-zinc-950" />
-              Start Face Scan
+              Turn On Camera
             </button>
           </div>
         ) : (

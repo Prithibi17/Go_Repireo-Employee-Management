@@ -7,7 +7,7 @@ import { FaceLoginScanner } from '@/components/auth/FaceLoginScanner';
 export function LoginPage() {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
-  const [authMode, setAuthMode] = useState<'password' | 'face'>('password');
+  const [authMode, setAuthMode] = useState<'face' | 'password'>('face');
 
   useEffect(() => {
     if (user) {
