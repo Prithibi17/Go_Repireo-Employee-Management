@@ -357,7 +357,7 @@ export function SettingsClient({ settings, departments, canEdit, isOwner = false
         </p>
 
         {canEdit && (
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
             <input
               type="text"
               value={newDeptName}
@@ -367,7 +367,7 @@ export function SettingsClient({ settings, departments, canEdit, isOwner = false
             />
             <button
               onClick={handleAddDept}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Department
@@ -375,7 +375,7 @@ export function SettingsClient({ settings, departments, canEdit, isOwner = false
           </div>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-3">
           {localDepts.map((d) => (
             <div
               key={d.id}

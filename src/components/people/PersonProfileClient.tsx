@@ -288,13 +288,13 @@ export function PersonProfileClient({
   return (
     <div className="space-y-6">
       {/* Profile Header Banner */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 sm:p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center gap-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5">
             <PersonAvatar name={person.full_name} photoUrl={person.profile_photo_path} size="xl" />
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="text-2xl font-bold text-slate-900">{person.full_name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{person.full_name}</h1>
                 <span className="font-mono text-xs font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-300">
                   {person.person_code}
                 </span>
@@ -425,7 +425,7 @@ export function PersonProfileClient({
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200">
+      <div className="flex items-center gap-1 sm:gap-2 border-b border-slate-200 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
         {[
           { id: 'overview', label: 'Overview & Details' },
           { id: 'idcard', label: `ID Card (${activeIdCard ? '1 Active' : 'None'})` },
@@ -435,7 +435,7 @@ export function PersonProfileClient({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`pb-3 px-3 text-sm font-semibold border-b-2 transition ${
+            className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap shrink-0 transition cursor-pointer ${
               activeTab === tab.id
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'

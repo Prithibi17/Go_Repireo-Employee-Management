@@ -137,12 +137,12 @@ export function ApiDocsPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-zinc-900 text-zinc-200 px-3 py-1.5 rounded-lg border border-zinc-800 text-xs font-mono shrink-0">
-            <span className="text-zinc-500 select-none">Base URL</span>
-            <span className="text-zinc-200 select-all font-medium">{baseUrl}</span>
+          <div className="flex items-center gap-2 bg-zinc-900 text-zinc-200 px-3 py-1.5 rounded-lg border border-zinc-800 text-xs font-mono max-w-full overflow-hidden shrink-0">
+            <span className="text-zinc-500 select-none text-[11px]">Base URL</span>
+            <span className="text-zinc-200 select-all font-medium truncate max-w-[200px] sm:max-w-none">{baseUrl}</span>
             <button
               onClick={() => copyToClipboard(baseUrl, 'baseurl')}
-              className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200 transition"
+              className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200 transition shrink-0 cursor-pointer"
               title="Copy Base URL"
             >
               {copiedKey === 'baseurl' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -151,10 +151,10 @@ export function ApiDocsPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-6 mt-6 border-b border-zinc-200 -mb-5 text-[13px]">
+        <div className="flex items-center gap-6 mt-6 border-b border-zinc-200 -mb-5 text-[13px] overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('endpoints')}
-            className={`pb-2.5 font-medium border-b-2 transition ${
+            className={`pb-2.5 font-medium border-b-2 whitespace-nowrap shrink-0 transition cursor-pointer ${
               activeTab === 'endpoints'
                 ? 'border-zinc-900 text-zinc-900 font-semibold'
                 : 'border-transparent text-zinc-500 hover:text-zinc-800'
@@ -164,7 +164,7 @@ export function ApiDocsPage() {
           </button>
           <button
             onClick={() => setActiveTab('keys')}
-            className={`pb-2.5 font-medium border-b-2 transition flex items-center gap-1.5 ${
+            className={`pb-2.5 font-medium border-b-2 whitespace-nowrap shrink-0 transition flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'keys'
                 ? 'border-zinc-900 text-zinc-900 font-semibold'
                 : 'border-transparent text-zinc-500 hover:text-zinc-800'
@@ -180,7 +180,7 @@ export function ApiDocsPage() {
               setActiveTab('console');
               if (!testResult && !testLoading) runLiveTest();
             }}
-            className={`pb-2.5 font-medium border-b-2 transition ${
+            className={`pb-2.5 font-medium border-b-2 whitespace-nowrap shrink-0 transition cursor-pointer ${
               activeTab === 'console'
                 ? 'border-zinc-900 text-zinc-900 font-semibold'
                 : 'border-transparent text-zinc-500 hover:text-zinc-800'

@@ -71,7 +71,7 @@ export function PeoplePage() {
       ) : (
         <div className="bg-white rounded-xl border border-zinc-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-[13px] text-zinc-600">
+            <table className="w-full min-w-[720px] text-left text-[13px] text-zinc-600">
               <thead className="bg-zinc-50/70 text-zinc-400 text-[11px] font-medium uppercase tracking-wider border-b border-zinc-200/60">
                 <tr>
                   <th className="py-2.5 px-4">Person</th>

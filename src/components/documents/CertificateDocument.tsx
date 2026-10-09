@@ -67,7 +67,10 @@ export function CertificateDocument({
       )}
 
       {/* Landscape Official Certificate Layout (Native 1152 x 768 Aspect Ratio) */}
-      <div className="overflow-x-auto w-full flex justify-center p-2">
+      <p className="text-[11px] text-slate-400 mb-2 sm:hidden text-center">
+        Tip: Swipe horizontally to inspect full certificate or tap Download PDF
+      </p>
+      <div className="overflow-x-auto w-full flex justify-start sm:justify-center p-2 rounded-xl bg-slate-100/50 border border-slate-200/80">
         <div
           ref={certRef}
           style={{ width: '960px', height: '640px' }}

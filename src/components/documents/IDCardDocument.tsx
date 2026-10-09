@@ -152,7 +152,7 @@ export function IDCardDocument({
     <div className="flex flex-col items-center">
       {/* Action Toolbar */}
       {showActions && (
-        <div className="flex items-center gap-3 mb-6 print:hidden">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6 print:hidden">
           <button
             onClick={handleDownloadPdf}
             className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs transition"
@@ -180,7 +180,7 @@ export function IDCardDocument({
       {/* Side-by-side ID Card Front & Back */}
       <div 
         ref={cardContainerRef}
-        className="id-card-print-area flex flex-wrap items-center justify-center gap-10 p-8 bg-slate-100/60 rounded-3xl border border-slate-200 shadow-inner print:bg-white print:border-none print:shadow-none print:p-0"
+        className="id-card-print-area w-full max-w-full overflow-x-auto flex flex-wrap items-center justify-center gap-6 sm:gap-10 p-3 sm:p-8 bg-slate-100/60 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-inner print:bg-white print:border-none print:shadow-none print:p-0"
       >
         {/* ================= ID CARD FRONT ================= */}
         <div 

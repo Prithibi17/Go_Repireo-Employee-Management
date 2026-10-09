@@ -131,7 +131,7 @@ export function DashboardPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-[13px] text-zinc-600">
+            <table className="w-full min-w-[620px] text-left text-[13px] text-zinc-600">
               <thead className="bg-zinc-50/70 text-zinc-400 text-[11px] font-medium uppercase tracking-wider border-b border-zinc-200/60">
                 <tr>
                   <th className="py-2.5 px-4">Intern</th>
@@ -202,7 +202,7 @@ export function DashboardPage() {
           </div>
 
           <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left text-[13px] text-zinc-600">
+            <table className="w-full min-w-[450px] text-left text-[13px] text-zinc-600">
               <thead className="bg-zinc-50/70 text-zinc-400 text-[11px] font-medium uppercase tracking-wider border-b border-zinc-200/60">
                 <tr>
                   <th className="py-2.5 px-4">Name</th>
@@ -260,7 +260,7 @@ export function DashboardPage() {
             </div>
           ) : (
             <div className="overflow-x-auto flex-1">
-              <table className="w-full text-left text-[13px] text-zinc-600">
+              <table className="w-full min-w-[450px] text-left text-[13px] text-zinc-600">
                 <thead className="bg-zinc-50/70 text-zinc-400 text-[11px] font-medium uppercase tracking-wider border-b border-zinc-200/60">
                   <tr>
                     <th className="py-2.5 px-4">Certificate No.</th>

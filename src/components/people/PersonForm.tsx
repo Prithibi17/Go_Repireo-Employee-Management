@@ -205,7 +205,7 @@ export function PersonForm({ departments, managers, initialData, personId }: Per
         <h2 className="text-base font-bold text-slate-900">2. Basic Information</h2>
 
         {/* Profile Photo */}
-        <div className="flex items-center gap-6 pb-2">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 pb-2 text-center sm:text-left">
           <div className="w-20 h-20 rounded-full border border-slate-300 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
             {formData.profile_photo_path ? (
               <img
@@ -574,7 +574,7 @@ export function PersonForm({ departments, managers, initialData, personId }: Per
       </div>
 
       {/* Submit Toolbar */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200">
         <Link
           to={isEditing ? `/people/${personId}` : '/people'}
           className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"

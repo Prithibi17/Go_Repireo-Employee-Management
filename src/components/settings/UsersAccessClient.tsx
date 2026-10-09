@@ -85,7 +85,7 @@ export function UsersAccessClient({ profiles, currentUserId, isOwner, onRefresh 
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
+          <table className="w-full min-w-[650px] text-left text-sm text-slate-600">
             <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
               <tr>
                 <th className="py-3 px-4">Staff Member</th>

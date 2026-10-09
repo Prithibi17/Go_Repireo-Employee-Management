@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutDashboard, Users, 
   CreditCard, Award, ShieldCheck, Settings, LogOut,
-  ChevronRight, Building2, Code2
+  Building2, Code2, X
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -14,9 +14,10 @@ interface SidebarProps {
     role: string;
     avatar_url?: string | null;
   };
+  onClose?: () => void;
 }
 
-export function Sidebar({ currentUser }: SidebarProps) {
+export function Sidebar({ currentUser, onClose }: SidebarProps) {
   const { pathname, search } = useLocation();
   const currentPathWithSearch = `${pathname}${search}`;
   const { logout } = useAuth();
@@ -52,23 +53,37 @@ export function Sidebar({ currentUser }: SidebarProps) {
   ];
 
   return (
-    <aside className="w-60 bg-[#09090b] border-r border-zinc-800/80 text-zinc-300 flex flex-col h-screen sticky top-0 shrink-0 select-none">
+    <aside className="w-64 lg:w-60 bg-[#09090b] border-r border-zinc-800/80 text-zinc-300 flex flex-col h-full select-none">
       {/* Brand Header */}
-      <div className="p-4 border-b border-zinc-800/80 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
-          <img 
-            src="/gorepireo-logo.png" 
-            alt="Go_Repireo" 
-            className="w-5 h-5 object-contain"
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-[13px] tracking-tight text-white truncate">Go_Repireo</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+      <div className="p-4 border-b border-zinc-800/80 flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+            <img 
+              src="/gorepireo-logo.png" 
+              alt="Go_Repireo" 
+              className="w-5 h-5 object-contain"
+            />
           </div>
-          <p className="text-[11px] text-zinc-500 truncate">Employee Management</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-[13px] tracking-tight text-white truncate">Go_Repireo</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </div>
+            <p className="text-[11px] text-zinc-500 truncate">Employee Management</p>
+          </div>
         </div>
+
+        {/* Mobile Close Button */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/80 transition-colors lg:hidden cursor-pointer"
+            aria-label="Close Navigation"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Groups */}
@@ -89,7 +104,8 @@ export function Sidebar({ currentUser }: SidebarProps) {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-all ${
+                  onClick={() => onClose?.()}
+                  className={`flex items-center justify-between px-2.5 py-2 lg:py-1.5 rounded-md text-[13px] font-medium transition-all ${
                     isActive 
                       ? 'bg-zinc-800 text-white shadow-xs' 
                       : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
@@ -121,7 +137,10 @@ export function Sidebar({ currentUser }: SidebarProps) {
           </div>
 
           <button
-            onClick={() => logout()}
+            onClick={() => {
+              onClose?.();
+              logout();
+            }}
             type="button"
             title="Sign out"
             className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"

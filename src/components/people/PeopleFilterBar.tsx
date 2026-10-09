@@ -28,7 +28,7 @@ export function PeopleFilterBar({ departments }: PeopleFilterBarProps) {
   return (
     <div className="space-y-3.5">
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-zinc-200/80">
+      <div className="flex items-center gap-1 border-b border-zinc-200/80 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
         {[
           { id: 'ALL', label: 'All Personnel', type: '' },
           { id: 'EMPLOYEE', label: 'Employees', type: 'EMPLOYEE' },
@@ -51,7 +51,7 @@ export function PeopleFilterBar({ departments }: PeopleFilterBarProps) {
                 if (tab.status) params.set('status', tab.status);
                 setSearchParams(params);
               }}
-              className={`pb-2.5 px-3 text-[13px] font-medium border-b-2 transition-colors cursor-pointer ${
+              className={`pb-2.5 px-3 text-[13px] font-medium border-b-2 whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
                 isActive
                   ? 'border-zinc-950 text-zinc-950'
                   : 'border-transparent text-zinc-500 hover:text-zinc-800'
