@@ -138,7 +138,6 @@ app.delete('/api/auth/face-enroll/:email', async (c) => {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
-
 app.post('/api/auth/face-login', async (c) => {
   try {
     const { descriptor, preferredEmail } = await c.req.json();

@@ -151,19 +151,7 @@ export function FaceLoginScanner({
             if (match.isMatch && match.matchedAccount) {
               const account = match.matchedAccount;
 
-              if (lastMatchedEmailRef.current === account.email) {
-                consecutiveMatchesRef.current += 1;
-              } else {
-                lastMatchedEmailRef.current = account.email;
-                consecutiveMatchesRef.current = 1;
-              }
-
-              // Fast-path instant verification: 1 high-confidence frame (>=68%) or 2 consecutive frames
-              const isConfirmed =
-                consecutiveMatchesRef.current >= 2 ||
-                (consecutiveMatchesRef.current >= 1 && match.similarityPercent >= 68);
-
-              if (isConfirmed && !isLoggingInRef.current) {
+              if (!isLoggingInRef.current) {
                 isLoggingInRef.current = true;
                 setScanning(false);
                 setMatchedUser({
@@ -181,7 +169,7 @@ export function FaceLoginScanner({
               consecutiveMatchesRef.current = 0;
               lastMatchedEmailRef.current = null;
               if (match.minDistance < 0.65) {
-                setStatusMessage(`Unrecognized face (Closest: ${match.similarityPercent}%)`);
+                setStatusMessage(`Scanning face... (${match.similarityPercent}% match)`);
               } else {
                 setStatusMessage('Align your face in the center...');
               }

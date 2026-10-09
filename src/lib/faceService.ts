@@ -90,8 +90,9 @@ export function computeEuclideanDistance(desc1: number[], desc2: number[]): numb
 }
 
 export function getSimilarityPercentage(distance: number): number {
-  // Distance 0 = 100%, Distance 0.4 = ~75%, Distance >= 0.7 = 0%
-  const similarity = Math.max(0, Math.min(100, Math.round((1 - distance * 1.35) * 100)));
+  // Properly calibrated FaceNet Euclidean distance scale:
+  // Distance 0.0 = 100%, Distance 0.15 = ~88%, Distance 0.30 = ~76%, Distance 0.5 = ~55%
+  const similarity = Math.max(0, Math.min(100, Math.round((1 - distance * 0.9) * 100)));
   return similarity;
 }
 
@@ -105,7 +106,7 @@ export interface MatchResult {
 export function findBestMatchingAccount(
   candidateDescriptor: number[],
   enrolledAccounts: EnrolledFaceAccount[],
-  threshold = 0.48
+  threshold = 0.52
 ): MatchResult {
   if (!candidateDescriptor || enrolledAccounts.length === 0) {
     return {
