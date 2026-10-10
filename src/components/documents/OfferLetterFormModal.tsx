@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { OfferLetter, Person } from '@/types';
-import { X, Calendar, Briefcase, User, Sparkles } from 'lucide-react';
+import { X, Calendar, Briefcase, User, Sparkles, GraduationCap } from 'lucide-react';
 
 interface OfferLetterFormModalProps {
   isOpen: boolean;
@@ -127,6 +127,11 @@ export function OfferLetterFormModal({
     ? parseIsoFromDate(existingOffer.joining_date)
     : parseIsoFromDate(person?.joining_date);
 
+  const initialOfferType = existingOffer?.offer_type
+    ? existingOffer.offer_type
+    : (person?.person_type === 'INTERN' ? 'INTERNSHIP' : 'JOB');
+
+  const [offerType, setOfferType] = useState<'JOB' | 'INTERNSHIP'>(initialOfferType);
   const [joiningIso, setJoiningIso] = useState<string>(initialJoiningIso);
   const [durationMonths, setDurationMonths] = useState<number>(existingOffer?.duration_months || 3);
 
@@ -160,6 +165,7 @@ export function OfferLetterFormModal({
       const parsedIso = parseIsoFromDate(existingOffer.joining_date);
       setJoiningIso(parsedIso);
       setDurationMonths(existingOffer.duration_months || 3);
+      setOfferType(existingOffer.offer_type || 'JOB');
       setFormData({
         recipientName: existingOffer.recipient_name,
         recipientEmail: existingOffer.recipient_email,
@@ -181,6 +187,7 @@ export function OfferLetterFormModal({
     } else if (person) {
       const personIso = parseIsoFromDate(person.joining_date);
       setJoiningIso(personIso);
+      setOfferType(person.person_type === 'INTERN' ? 'INTERNSHIP' : 'JOB');
       const calc = computeOfferDatesAndDuration(personIso, 3);
       setFormData((prev) => ({
         ...prev,
@@ -231,6 +238,7 @@ export function OfferLetterFormModal({
 
       const payload = isEditing
         ? {
+            offer_type: offerType,
             recipient_name: formData.recipientName,
             recipient_email: formData.recipientEmail,
             recipient_phone: formData.recipientPhone,
@@ -251,6 +259,7 @@ export function OfferLetterFormModal({
           }
         : {
             personId: person?.id || null,
+            offerType,
             recipientName: formData.recipientName,
             recipientEmail: formData.recipientEmail,
             recipientPhone: formData.recipientPhone,
@@ -320,6 +329,56 @@ export function OfferLetterFormModal({
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+          {/* Document Type Selector (Job Offer Letter vs Internship Offer Letter) */}
+          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Offer Letter Type *
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setOfferType('JOB');
+                  if (!isEditing && formData.position === 'Software Developer Intern') {
+                    setFormData((prev) => ({ ...prev, position: 'Software Engineer' }));
+                  }
+                }}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border text-xs font-bold transition cursor-pointer ${
+                  offerType === 'JOB'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                <Briefcase className="w-4 h-4" />
+                Job Offer Letter
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setOfferType('INTERNSHIP');
+                  if (!isEditing && formData.position === 'Software Engineer') {
+                    setFormData((prev) => ({ ...prev, position: 'Software Developer Intern' }));
+                  }
+                }}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border text-xs font-bold transition cursor-pointer ${
+                  offerType === 'INTERNSHIP'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                <GraduationCap className="w-4 h-4" />
+                Internship Offer Letter
+              </button>
+            </div>
+            <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/60 text-[11px] text-slate-500">
+              <span>Official Header:</span>
+              <strong className="text-slate-900 font-mono font-semibold">
+                {offerType === 'INTERNSHIP' ? 'INTERNSHIP OFFER LETTER' : 'JOB OFFER LETTER'}
+              </strong>
+            </div>
+          </div>
+
           {/* Candidate Info Section */}
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">

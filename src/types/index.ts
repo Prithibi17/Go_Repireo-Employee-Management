@@ -114,6 +114,7 @@ export interface EmployeeAgreement {
 }
 
 export type OfferLetterStatus = 'ISSUED' | 'SENT' | 'ACCEPTED' | 'REVOKED';
+export type OfferType = 'JOB' | 'INTERNSHIP';
 
 export interface OfferLetter {
   id: string;
@@ -121,6 +122,7 @@ export interface OfferLetter {
   letter_number: string;
   issue_date: string;
   status: OfferLetterStatus;
+  offer_type?: OfferType;
   recipient_name: string;
   recipient_email: string;
   recipient_phone?: string | null;

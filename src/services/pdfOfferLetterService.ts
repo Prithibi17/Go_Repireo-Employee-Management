@@ -81,6 +81,20 @@ export async function generateOfficialOfferLetterPdf(
     return lines;
   };
 
+  // 0. Dynamic Header Title (JOB OFFER LETTER vs INTERNSHIP OFFER LETTER)
+  const isInternship = offer.offer_type === 'INTERNSHIP';
+  const titleText = isInternship ? 'INTERNSHIP OFFER LETTER' : 'JOB OFFER LETTER';
+  const titleSize = isInternship ? 38 : 43.5;
+  const navy = rgb(5 / 255, 29 / 255, 59 / 255);
+
+  page.drawText(titleText, {
+    x: 55,
+    y: 849,
+    size: titleSize,
+    font: fontBold,
+    color: navy,
+  });
+
   // 1. Date (Top-Right)
   const formattedDate = offer.issue_date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const dateStr = `Date: ${formattedDate}`;

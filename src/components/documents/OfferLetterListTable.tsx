@@ -82,10 +82,13 @@ export function OfferLetterListTable({
                   <td className="py-3 px-4">
                     <Link
                       to={`/offer-letters/${offer.id}`}
-                      className="font-mono text-[11px] font-medium text-indigo-700 hover:underline"
+                      className="font-mono text-[11px] font-medium text-indigo-700 hover:underline block"
                     >
                       {offer.letter_number}
                     </Link>
+                    <span className="inline-block mt-0.5 text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                      {offer.offer_type === 'INTERNSHIP' ? 'Internship' : 'Job Offer'}
+                    </span>
                   </td>
                   <td className="py-3 px-4 font-medium text-zinc-900">
                     <div>

@@ -206,6 +206,7 @@ export async function initTursoSchema() {
       person_id TEXT,
       letter_number TEXT UNIQUE NOT NULL,
       issue_date TEXT NOT NULL,
+      offer_type TEXT NOT NULL DEFAULT 'JOB',
       status TEXT NOT NULL DEFAULT 'ISSUED',
       recipient_name TEXT NOT NULL,
       recipient_email TEXT NOT NULL,
@@ -293,6 +294,12 @@ export async function initTursoSchema() {
     }
   } catch {
     // ignore
+  }
+
+  try {
+    await db.execute(`ALTER TABLE offer_letters ADD COLUMN offer_type TEXT DEFAULT 'JOB';`);
+  } catch {
+    // column already exists
   }
 
   // Seed default sequence and initial company config if missing

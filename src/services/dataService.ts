@@ -1470,6 +1470,7 @@ export const DataService = {
       person_id: String(row.person_id),
       letter_number: String(row.letter_number),
       issue_date: String(row.issue_date),
+      offer_type: (row.offer_type as any) || 'JOB',
       status: row.status as any,
       recipient_name: String(row.recipient_name),
       recipient_email: String(row.recipient_email),
@@ -1526,6 +1527,7 @@ export const DataService = {
       person_id: String(row.person_id),
       letter_number: String(row.letter_number),
       issue_date: String(row.issue_date),
+      offer_type: (row.offer_type as any) || 'JOB',
       status: row.status as any,
       recipient_name: String(row.recipient_name),
       recipient_email: String(row.recipient_email),
@@ -1579,6 +1581,7 @@ export const DataService = {
     joiningDate?: string | null;
     endDate?: string | null;
     issueDate?: string | null;
+    offerType?: 'JOB' | 'INTERNSHIP' | null;
     signatoryName?: string | null;
     signatoryTitle?: string | null;
     companyName?: string | null;
@@ -1625,16 +1628,17 @@ export const DataService = {
 
     await db.execute({
       sql: `INSERT INTO offer_letters (
-        id, person_id, letter_number, issue_date, status, recipient_name, recipient_email,
+        id, person_id, letter_number, issue_date, offer_type, status, recipient_name, recipient_email,
         recipient_phone, recipient_location, position, department, duration, duration_months,
         stipend, work_mode, reporting_to, joining_date, end_date, signatory_name, signatory_title,
         company_name, created_at, updated_at, created_by
-      ) VALUES (?, ?, ?, ?, 'ISSUED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, 'ISSUED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         offerId,
         personId,
         letterNumber,
         issueDate,
+        params.offerType || 'JOB',
         params.recipientName,
         params.recipientEmail,
         params.recipientPhone || null,
@@ -1685,6 +1689,7 @@ export const DataService = {
         recipient_email = COALESCE(?, recipient_email),
         recipient_phone = ?,
         recipient_location = ?,
+        offer_type = COALESCE(?, offer_type),
         position = COALESCE(?, position),
         department = ?,
         duration = COALESCE(?, duration),
@@ -1705,6 +1710,7 @@ export const DataService = {
         params.recipient_email ?? null,
         params.recipient_phone !== undefined ? params.recipient_phone : existing.recipient_phone,
         params.recipient_location !== undefined ? params.recipient_location : existing.recipient_location,
+        params.offer_type ?? null,
         params.position ?? null,
         params.department !== undefined ? params.department : existing.department,
         params.duration ?? null,

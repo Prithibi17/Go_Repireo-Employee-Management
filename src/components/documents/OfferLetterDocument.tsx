@@ -63,7 +63,8 @@ export function OfferLetterDocument({
   };
 
   // Mailto link for sending offer letter to candidate
-  const emailSubject = encodeURIComponent(`Offer of Employment: ${offer.position} - ${offer.company_name || 'Go_Repireo'}`);
+  const docTypeLabel = offer.offer_type === 'INTERNSHIP' ? 'Internship Offer' : 'Job Offer';
+  const emailSubject = encodeURIComponent(`${docTypeLabel}: ${offer.position} - ${offer.company_name || 'Go_Repireo'}`);
   const emailBody = encodeURIComponent(
 `Dear ${offer.recipient_name},
 
@@ -100,6 +101,9 @@ ${offer.signatory_title}, ${offer.company_name || 'Go_Repireo'}`
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
                 {offer.letter_number}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                {offer.offer_type === 'INTERNSHIP' ? 'Internship Offer' : 'Job Offer'}
               </span>
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
@@ -194,6 +198,22 @@ ${offer.signatory_title}, ${offer.company_name || 'Go_Repireo'}`
                 alt="Official Go_Repireo Offer Letter Template"
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none"
               />
+
+              {/* Dynamic Official Header Title (JOB OFFER LETTER vs INTERNSHIP OFFER LETTER) */}
+              <div
+                style={{ top: '235px', left: '55px' }}
+                className="absolute z-10 font-sans font-extrabold tracking-tight text-[#051d3b] pointer-events-none"
+              >
+                <span
+                  style={{
+                    fontSize: offer.offer_type === 'INTERNSHIP' ? '38px' : '43.5px',
+                    lineHeight: 1,
+                    fontWeight: 800,
+                  }}
+                >
+                  {offer.offer_type === 'INTERNSHIP' ? 'INTERNSHIP OFFER LETTER' : 'JOB OFFER LETTER'}
+                </span>
+              </div>
 
               {/* Dynamic Date (Top Right) */}
               <div

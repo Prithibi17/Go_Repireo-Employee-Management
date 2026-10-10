@@ -46741,6 +46741,7 @@ async function initTursoSchema() {
       person_id TEXT,
       letter_number TEXT UNIQUE NOT NULL,
       issue_date TEXT NOT NULL,
+      offer_type TEXT NOT NULL DEFAULT 'JOB',
       status TEXT NOT NULL DEFAULT 'ISSUED',
       recipient_name TEXT NOT NULL,
       recipient_email TEXT NOT NULL,
@@ -46823,6 +46824,10 @@ async function initTursoSchema() {
       );`);
       await db.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_offer_letters_number ON offer_letters (letter_number);`);
     }
+  } catch {
+  }
+  try {
+    await db.execute(`ALTER TABLE offer_letters ADD COLUMN offer_type TEXT DEFAULT 'JOB';`);
   } catch {
   }
   await db.execute({
@@ -48208,6 +48213,7 @@ var DataService = {
       person_id: String(row.person_id),
       letter_number: String(row.letter_number),
       issue_date: String(row.issue_date),
+      offer_type: row.offer_type || "JOB",
       status: row.status,
       recipient_name: String(row.recipient_name),
       recipient_email: String(row.recipient_email),
@@ -48263,6 +48269,7 @@ var DataService = {
       person_id: String(row.person_id),
       letter_number: String(row.letter_number),
       issue_date: String(row.issue_date),
+      offer_type: row.offer_type || "JOB",
       status: row.status,
       recipient_name: String(row.recipient_name),
       recipient_email: String(row.recipient_email),
@@ -48335,16 +48342,17 @@ var DataService = {
     }
     await db.execute({
       sql: `INSERT INTO offer_letters (
-        id, person_id, letter_number, issue_date, status, recipient_name, recipient_email,
+        id, person_id, letter_number, issue_date, offer_type, status, recipient_name, recipient_email,
         recipient_phone, recipient_location, position, department, duration, duration_months,
         stipend, work_mode, reporting_to, joining_date, end_date, signatory_name, signatory_title,
         company_name, created_at, updated_at, created_by
-      ) VALUES (?, ?, ?, ?, 'ISSUED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, 'ISSUED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         offerId,
         personId,
         letterNumber,
         issueDate,
+        params.offerType || "JOB",
         params.recipientName,
         params.recipientEmail,
         params.recipientPhone || null,
@@ -48386,6 +48394,7 @@ var DataService = {
         recipient_email = COALESCE(?, recipient_email),
         recipient_phone = ?,
         recipient_location = ?,
+        offer_type = COALESCE(?, offer_type),
         position = COALESCE(?, position),
         department = ?,
         duration = COALESCE(?, duration),
@@ -48406,6 +48415,7 @@ var DataService = {
         params.recipient_email ?? null,
         params.recipient_phone !== void 0 ? params.recipient_phone : existing.recipient_phone,
         params.recipient_location !== void 0 ? params.recipient_location : existing.recipient_location,
+        params.offer_type ?? null,
         params.position ?? null,
         params.department !== void 0 ? params.department : existing.department,
         params.duration ?? null,
@@ -69272,6 +69282,17 @@ async function generateOfficialOfferLetterPdf(offer) {
     if (currentLine) lines.push(currentLine);
     return lines;
   };
+  const isInternship = offer.offer_type === "INTERNSHIP";
+  const titleText = isInternship ? "INTERNSHIP OFFER LETTER" : "JOB OFFER LETTER";
+  const titleSize = isInternship ? 38 : 43.5;
+  const navy = (0, import_pdf_lib2.rgb)(5 / 255, 29 / 255, 59 / 255);
+  page.drawText(titleText, {
+    x: 55,
+    y: 849,
+    size: titleSize,
+    font: fontBold,
+    color: navy
+  });
   const formattedDate = offer.issue_date || (/* @__PURE__ */ new Date()).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const dateStr = `Date: ${formattedDate}`;
   const dateWidth = fontBold.widthOfTextAtSize(dateStr, 13.5);
