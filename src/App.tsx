@@ -14,6 +14,8 @@ import { CertificatesPage } from '@/pages/CertificatesPage';
 import { CertificateDetailPage } from '@/pages/CertificateDetailPage';
 import { OfferLettersPage } from '@/pages/OfferLettersPage';
 import { OfferLetterDetailPage } from '@/pages/OfferLetterDetailPage';
+import { EmployeeAgreementsPage } from '@/pages/EmployeeAgreementsPage';
+import { EmployeeAgreementDetailPage } from '@/pages/EmployeeAgreementDetailPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { UsersAccessPage } from '@/pages/UsersAccessPage';
 import { VerifyIdPage } from '@/pages/VerifyIdPage';
@@ -43,6 +45,8 @@ export default function App() {
           <Route path="/id-cards/:id" element={<IdCardDetailPage />} />
           <Route path="/offer-letters" element={<OfferLettersPage />} />
           <Route path="/offer-letters/:id" element={<OfferLetterDetailPage />} />
+          <Route path="/employee-agreements" element={<EmployeeAgreementsPage />} />
+          <Route path="/employee-agreements/:id" element={<EmployeeAgreementDetailPage />} />
           <Route path="/certificates" element={<CertificatesPage />} />
           <Route path="/certificates/:id" element={<CertificateDetailPage />} />
           <Route path="/api-docs" element={<ApiDocsPage />} />

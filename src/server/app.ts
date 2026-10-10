@@ -5,6 +5,7 @@ import { personSchema } from '../validators';
 import { getCurrentUser, canManagePeople, canIssueCertificates, canManageSettings, canManageUsers, canManageApiKeys } from './authHelper';
 import { generateOfficialCertificatePdf } from '../services/pdfCertificateService';
 import { generateOfficialOfferLetterPdf } from '../services/pdfOfferLetterService';
+import { generateOfficialEmployeeAgreementPdf } from '../services/pdfEmployeeAgreementService';
 import { getTursoClient } from '../lib/turso';
 
 const app = new Hono();
@@ -690,6 +691,152 @@ app.delete('/api/offer-letters/:id', async (c) => {
     return c.json({ success: true, ...result });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || 'Failed to delete offer letter' }, 400);
+  }
+});
+
+// === EMPLOYEE AGREEMENTS ===
+app.get('/api/employee-agreements', async (c) => {
+  try {
+    const personId = c.req.query('person_id');
+    const agreements = await DataService.getEmployeeAgreements(personId);
+    return c.json({ success: true, agreements });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+app.get('/api/employee-agreements/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const agreement = await DataService.getEmployeeAgreementById(id);
+    if (!agreement) {
+      return c.json({ success: false, error: 'Employee agreement not found' }, 404);
+    }
+    const company = await DataService.getCompanySettings();
+    const activityLogs = await DataService.getActivityLogsForEntity('EMPLOYEE_AGREEMENT', agreement.id);
+    return c.json({ success: true, agreement, company, activityLogs });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+app.get('/api/employee-agreements/:id/pdf', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const agreement = await DataService.getEmployeeAgreementById(id);
+    if (!agreement) {
+      return c.text('Employee agreement not found', 404);
+    }
+
+    const pdfBytes = await generateOfficialEmployeeAgreementPdf(agreement);
+    const sanitizedName = (agreement.recipient_name || 'Candidate').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `GoRepireo_Agreement_${sanitizedName}_${agreement.agreement_number}.pdf`;
+
+    return new Response(Buffer.from(pdfBytes), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    });
+  } catch (err: any) {
+    console.error('Employee agreement PDF generation error', err);
+    return c.text('Failed to generate employee agreement PDF', 500);
+  }
+});
+
+app.post('/api/employee-agreements', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized to generate employee agreements' }, 403);
+    }
+
+    const body = await c.req.json();
+    const agreement = await DataService.createEmployeeAgreement({
+      ...body,
+      actor: { id: currentUser.id, name: currentUser.full_name },
+    });
+
+    return c.json({ success: true, agreement });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to create employee agreement' }, 400);
+  }
+});
+
+app.put('/api/employee-agreements/:id', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized to update employee agreements' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const agreement = await DataService.updateEmployeeAgreement(id, body, {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: true, agreement });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to update employee agreement' }, 400);
+  }
+});
+
+app.post('/api/employee-agreements/:id/send', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const agreement = await DataService.markEmployeeAgreementSent(id, {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: true, agreement });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to mark employee agreement as sent' }, 400);
+  }
+});
+
+app.post('/api/employee-agreements/:id/delete', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const result = await DataService.deleteEmployeeAgreement(id, {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: true, ...result });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to delete employee agreement' }, 400);
+  }
+});
+
+app.delete('/api/employee-agreements/:id', async (c) => {
+  try {
+    const currentUser = await getCurrentUser(c);
+    if (!canManagePeople(currentUser.role)) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const result = await DataService.deleteEmployeeAgreement(id, {
+      id: currentUser.id,
+      name: currentUser.full_name,
+    });
+
+    return c.json({ success: true, ...result });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || 'Failed to delete employee agreement' }, 400);
   }
 });
 

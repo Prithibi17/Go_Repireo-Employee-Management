@@ -6,7 +6,7 @@ import {
   Person, Internship, IdCard, Certificate, ActivityLog, 
   CompanySettings, Department, Profile, PublicIdVerificationResponse, 
   PublicCertificateVerificationResponse, PublicCardApiResponse,
-  ApiKey, PromoteInternData
+  ApiKey, PromoteInternData, EmployeeAgreement
 } from '../types';
 import { PersonFormData } from '../validators';
 
@@ -459,6 +459,11 @@ export const DataService = {
       args: [id],
     });
 
+    const agreementsRes = await db.execute({
+      sql: 'SELECT * FROM employee_agreements WHERE person_id = ? ORDER BY created_at DESC',
+      args: [id],
+    });
+
     return {
       id: String(r.id),
       person_code: String(r.person_code),
@@ -564,6 +569,24 @@ export const DataService = {
         signatory_name: String(row.signatory_name || 'ANSH TIWARI'),
         signatory_title: String(row.signatory_title || 'FOUNDER'),
         company_name: String(row.company_name || 'Go_Repireo'),
+        pdf_storage_path: row.pdf_storage_path ? String(row.pdf_storage_path) : null,
+        sent_at: row.sent_at ? String(row.sent_at) : null,
+        created_at: String(row.created_at),
+        updated_at: String(row.updated_at),
+        created_by: row.created_by ? String(row.created_by) : null,
+      })),
+      employee_agreements: agreementsRes.rows.map((row) => ({
+        id: String(row.id),
+        person_id: row.person_id ? String(row.person_id) : null,
+        agreement_number: String(row.agreement_number),
+        issue_date: String(row.issue_date),
+        status: row.status as any,
+        recipient_title: row.recipient_title ? String(row.recipient_title) : 'Mr.',
+        recipient_name: String(row.recipient_name),
+        recipient_address: String(row.recipient_address),
+        recipient_email: row.recipient_email ? String(row.recipient_email) : null,
+        recipient_phone: row.recipient_phone ? String(row.recipient_phone) : null,
+        salutation_name: String(row.salutation_name),
         pdf_storage_path: row.pdf_storage_path ? String(row.pdf_storage_path) : null,
         sent_at: row.sent_at ? String(row.sent_at) : null,
         created_at: String(row.created_at),
@@ -1748,6 +1771,257 @@ export const DataService = {
     });
 
     return { success: true, letterNumber: existing.letter_number };
+  },
+
+  // === EMPLOYEE AGREEMENTS ===
+  async generateAgreementNumber(): Promise<string> {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await db.execute('SELECT agreement_number FROM employee_agreements');
+    const existingNumbers = new Set(existing.rows.map((r) => String(r.agreement_number)));
+
+    let attempts = 0;
+    while (attempts < 20) {
+      const candidate = `AGR-${generateCryptoAlphanumeric(7)}`;
+      if (!existingNumbers.has(candidate)) {
+        return candidate;
+      }
+      attempts++;
+    }
+    return `AGR-${Date.now().toString().slice(-7)}`;
+  },
+
+  async getEmployeeAgreements(personId?: string): Promise<EmployeeAgreement[]> {
+    await ensureDb();
+    const db = getTursoClient();
+    let sql = `
+      SELECT a.*, p.person_code, p.full_name as person_full_name, p.profile_photo_path, p.designation as person_designation
+      FROM employee_agreements a
+      LEFT JOIN people p ON a.person_id = p.id
+    `;
+    const args: any[] = [];
+    if (personId) {
+      sql += ' WHERE a.person_id = ?';
+      args.push(personId);
+    }
+    sql += ' ORDER BY a.created_at DESC';
+
+    const res = await db.execute({ sql, args });
+    return res.rows.map((row) => ({
+      id: String(row.id),
+      person_id: row.person_id ? String(row.person_id) : null,
+      agreement_number: String(row.agreement_number),
+      issue_date: String(row.issue_date),
+      status: row.status as any,
+      recipient_title: row.recipient_title ? String(row.recipient_title) : 'Mr.',
+      recipient_name: String(row.recipient_name),
+      recipient_address: String(row.recipient_address),
+      recipient_email: row.recipient_email ? String(row.recipient_email) : null,
+      recipient_phone: row.recipient_phone ? String(row.recipient_phone) : null,
+      salutation_name: String(row.salutation_name),
+      pdf_storage_path: row.pdf_storage_path ? String(row.pdf_storage_path) : null,
+      sent_at: row.sent_at ? String(row.sent_at) : null,
+      created_at: String(row.created_at),
+      updated_at: String(row.updated_at),
+      created_by: row.created_by ? String(row.created_by) : null,
+      person: row.person_full_name
+        ? ({
+            id: String(row.person_id),
+            person_code: String(row.person_code),
+            full_name: String(row.person_full_name),
+            profile_photo_path: row.profile_photo_path ? String(row.profile_photo_path) : null,
+            designation: String(row.person_designation || ''),
+          } as any)
+        : undefined,
+    }));
+  },
+
+  async getEmployeeAgreementById(id: string): Promise<EmployeeAgreement | null> {
+    await ensureDb();
+    const db = getTursoClient();
+    const res = await db.execute({
+      sql: `
+        SELECT a.*, p.person_code, p.full_name as person_full_name, p.profile_photo_path, p.designation as person_designation
+        FROM employee_agreements a
+        LEFT JOIN people p ON a.person_id = p.id
+        WHERE a.id = ? OR a.agreement_number = ?
+        LIMIT 1
+      `,
+      args: [id, id],
+    });
+
+    if (res.rows.length === 0) return null;
+    const row = res.rows[0];
+    return {
+      id: String(row.id),
+      person_id: row.person_id ? String(row.person_id) : null,
+      agreement_number: String(row.agreement_number),
+      issue_date: String(row.issue_date),
+      status: row.status as any,
+      recipient_title: row.recipient_title ? String(row.recipient_title) : 'Mr.',
+      recipient_name: String(row.recipient_name),
+      recipient_address: String(row.recipient_address),
+      recipient_email: row.recipient_email ? String(row.recipient_email) : null,
+      recipient_phone: row.recipient_phone ? String(row.recipient_phone) : null,
+      salutation_name: String(row.salutation_name),
+      pdf_storage_path: row.pdf_storage_path ? String(row.pdf_storage_path) : null,
+      sent_at: row.sent_at ? String(row.sent_at) : null,
+      created_at: String(row.created_at),
+      updated_at: String(row.updated_at),
+      created_by: row.created_by ? String(row.created_by) : null,
+      person: row.person_full_name
+        ? ({
+            id: String(row.person_id),
+            person_code: String(row.person_code),
+            full_name: String(row.person_full_name),
+            profile_photo_path: row.profile_photo_path ? String(row.profile_photo_path) : null,
+            designation: String(row.person_designation || ''),
+          } as any)
+        : undefined,
+    };
+  },
+
+  async createEmployeeAgreement(params: {
+    personId?: string | null;
+    recipientTitle?: string;
+    recipientName: string;
+    recipientAddress: string;
+    recipientEmail?: string | null;
+    recipientPhone?: string | null;
+    salutationName?: string;
+    issueDate?: string;
+    actor: { id?: string; name: string };
+  }): Promise<EmployeeAgreement> {
+    await ensureDb();
+    const db = getTursoClient();
+
+    const agreementId = `agr-${Date.now()}-${generateCryptoAlphanumeric(5)}`;
+    const agreementNumber = await this.generateAgreementNumber();
+    const now = new Date().toISOString();
+
+    const issueDate = params.issueDate || new Date().toLocaleDateString('en-GB');
+    const recipientTitle = params.recipientTitle || 'Mr.';
+    const salutationName = params.salutationName || params.recipientName.split(' ')[0] || 'Candidate';
+
+    await db.execute({
+      sql: `INSERT INTO employee_agreements (
+        id, person_id, agreement_number, issue_date, status,
+        recipient_title, recipient_name, recipient_address,
+        recipient_email, recipient_phone, salutation_name,
+        created_at, updated_at, created_by
+      ) VALUES (?, ?, ?, ?, 'ISSUED', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        agreementId,
+        params.personId || null,
+        agreementNumber,
+        issueDate,
+        recipientTitle,
+        params.recipientName,
+        params.recipientAddress,
+        params.recipientEmail || null,
+        params.recipientPhone || null,
+        salutationName,
+        now,
+        now,
+        params.actor.id || null,
+      ],
+    });
+
+    await this.logActivity(params.actor, 'EMPLOYEE_AGREEMENT_CREATED', 'EMPLOYEE_AGREEMENT', agreementId, {
+      agreement_number: agreementNumber,
+      recipient: params.recipientName,
+    });
+
+    const created = await this.getEmployeeAgreementById(agreementId);
+    return created!;
+  },
+
+  async updateEmployeeAgreement(
+    id: string,
+    params: Partial<EmployeeAgreement>,
+    actor: { id?: string; name: string }
+  ): Promise<EmployeeAgreement> {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await this.getEmployeeAgreementById(id);
+    if (!existing) throw new Error('Employee agreement not found');
+
+    const now = new Date().toISOString();
+
+    await db.execute({
+      sql: `UPDATE employee_agreements SET
+        recipient_title = COALESCE(?, recipient_title),
+        recipient_name = COALESCE(?, recipient_name),
+        recipient_address = COALESCE(?, recipient_address),
+        recipient_email = ?,
+        recipient_phone = ?,
+        salutation_name = COALESCE(?, salutation_name),
+        issue_date = COALESCE(?, issue_date),
+        status = COALESCE(?, status),
+        updated_at = ?
+      WHERE id = ?`,
+      args: [
+        params.recipient_title ?? null,
+        params.recipient_name ?? null,
+        params.recipient_address ?? null,
+        params.recipient_email !== undefined ? params.recipient_email : existing.recipient_email,
+        params.recipient_phone !== undefined ? params.recipient_phone : existing.recipient_phone,
+        params.salutation_name ?? null,
+        params.issue_date ?? null,
+        params.status ?? null,
+        now,
+        id,
+      ] as any,
+    });
+
+    await this.logActivity(actor, 'EMPLOYEE_AGREEMENT_UPDATED', 'EMPLOYEE_AGREEMENT', id, {
+      agreement_number: existing.agreement_number,
+      recipient: params.recipient_name || existing.recipient_name,
+    });
+
+    const updated = await this.getEmployeeAgreementById(id);
+    return updated!;
+  },
+
+  async markEmployeeAgreementSent(id: string, actor: { id?: string; name: string }): Promise<EmployeeAgreement> {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await this.getEmployeeAgreementById(id);
+    if (!existing) throw new Error('Employee agreement not found');
+
+    const now = new Date().toISOString();
+    await db.execute({
+      sql: "UPDATE employee_agreements SET status = 'SENT', sent_at = ?, updated_at = ? WHERE id = ?",
+      args: [now, now, id],
+    });
+
+    await this.logActivity(actor, 'EMPLOYEE_AGREEMENT_SENT', 'EMPLOYEE_AGREEMENT', id, {
+      agreement_number: existing.agreement_number,
+      recipient: existing.recipient_name,
+      email: existing.recipient_email,
+    });
+
+    const updated = await this.getEmployeeAgreementById(id);
+    return updated!;
+  },
+
+  async deleteEmployeeAgreement(id: string, actor: { id?: string; name: string }): Promise<{ success: boolean; agreementNumber: string }> {
+    await ensureDb();
+    const db = getTursoClient();
+    const existing = await this.getEmployeeAgreementById(id);
+    if (!existing) throw new Error('Employee agreement not found');
+
+    await db.execute({
+      sql: 'DELETE FROM employee_agreements WHERE id = ?',
+      args: [id],
+    });
+
+    await this.logActivity(actor, 'EMPLOYEE_AGREEMENT_DELETED', 'EMPLOYEE_AGREEMENT', id, {
+      agreement_number: existing.agreement_number,
+      recipient: existing.recipient_name,
+    });
+
+    return { success: true, agreementNumber: existing.agreement_number };
   },
 
   // === PUBLIC VERIFICATION ===

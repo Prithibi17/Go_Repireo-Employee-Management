@@ -88,6 +88,29 @@ export interface Person {
   id_cards?: IdCard[];
   certificates?: Certificate[];
   offer_letters?: OfferLetter[];
+  employee_agreements?: EmployeeAgreement[];
+}
+
+export type EmployeeAgreementStatus = 'ISSUED' | 'SENT' | 'SIGNED';
+
+export interface EmployeeAgreement {
+  id: string;
+  person_id?: string | null;
+  agreement_number: string;
+  issue_date: string;
+  status: EmployeeAgreementStatus;
+  recipient_title?: string;
+  recipient_name: string;
+  recipient_address: string;
+  recipient_email?: string | null;
+  recipient_phone?: string | null;
+  salutation_name: string;
+  pdf_storage_path?: string | null;
+  sent_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
+  person?: Person;
 }
 
 export type OfferLetterStatus = 'ISSUED' | 'SENT' | 'ACCEPTED' | 'REVOKED';

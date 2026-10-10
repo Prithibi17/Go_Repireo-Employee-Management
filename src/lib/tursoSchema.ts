@@ -230,10 +230,30 @@ export async function initTursoSchema() {
       created_by TEXT
     );`,
 
+    `CREATE TABLE IF NOT EXISTS employee_agreements (
+      id TEXT PRIMARY KEY,
+      person_id TEXT,
+      agreement_number TEXT UNIQUE NOT NULL,
+      issue_date TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ISSUED',
+      recipient_title TEXT DEFAULT 'Mr.',
+      recipient_name TEXT NOT NULL,
+      recipient_address TEXT NOT NULL,
+      recipient_email TEXT,
+      recipient_phone TEXT,
+      salutation_name TEXT NOT NULL,
+      pdf_storage_path TEXT,
+      sent_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      created_by TEXT
+    );`,
+
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_people_person_code ON people (person_code);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_id_cards_card_number ON id_cards (card_number);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_certificates_cert_number ON certificates (certificate_number);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_offer_letters_number ON offer_letters (letter_number);`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_employee_agreements_number ON employee_agreements (agreement_number);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_face_credentials_email ON user_face_credentials (user_email);`
   ]);
 
@@ -281,7 +301,8 @@ export async function initTursoSchema() {
       ('employee', 0),
       ('intern', 0),
       ('certificate', 0),
-      ('offer_letter', 0);`,
+      ('offer_letter', 0),
+      ('employee_agreement', 0);`,
     args: []
   });
 

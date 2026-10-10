@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutDashboard, Users, 
-  CreditCard, Award, FileText, ShieldCheck, Settings, LogOut,
+  CreditCard, Award, FileText, FileCheck, ShieldCheck, Settings, LogOut,
   Building2, Code2, X
 } from 'lucide-react';
 
@@ -40,6 +40,7 @@ export function Sidebar({ currentUser, onClose }: SidebarProps) {
       items: [
         { name: 'ID Cards', href: '/id-cards', icon: CreditCard },
         { name: 'Offer Letters', href: '/offer-letters', icon: FileText },
+        { name: 'Employee Agreements', href: '/employee-agreements', icon: FileCheck },
         { name: 'Certificates', href: '/certificates', icon: Award },
       ],
     },
