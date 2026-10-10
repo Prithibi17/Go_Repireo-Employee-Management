@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { OfferLetter, Person } from '@/types';
-import { X, Calendar, Briefcase, Mail, Phone, MapPin, User, DollarSign } from 'lucide-react';
+import { X, Calendar, Briefcase, User, Sparkles } from 'lucide-react';
 
 interface OfferLetterFormModalProps {
   isOpen: boolean;
@@ -8,6 +8,69 @@ interface OfferLetterFormModalProps {
   onSuccess: (offerLetter: OfferLetter) => void;
   person?: Person | null;
   existingOffer?: OfferLetter | null;
+}
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+/**
+ * Pure calendar arithmetic to compute human-friendly offer dates & duration lines.
+ * Free from timezone shifts.
+ */
+function computeOfferDatesAndDuration(startIso: string, months: number) {
+  if (!startIso) {
+    const monthLabel = months === 1 ? '1 Month' : `${months} Months`;
+    return {
+      formattedStart: '',
+      formattedEnd: '',
+      durationLine: monthLabel,
+    };
+  }
+
+  const parts = startIso.split('-');
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) - 1; // 0-indexed month
+  const d = parseInt(parts[2], 10);
+
+  if (isNaN(y) || isNaN(m) || isNaN(d) || m < 0 || m > 11) {
+    const monthLabel = months === 1 ? '1 Month' : `${months} Months`;
+    return {
+      formattedStart: startIso,
+      formattedEnd: '',
+      durationLine: monthLabel,
+    };
+  }
+
+  const formattedStart = `${d} ${MONTH_NAMES[m]} ${y}`;
+
+  // End date is exactly `months` later minus 1 day
+  const endDateObj = new Date(y, m + months, d - 1);
+  const endD = endDateObj.getDate();
+  const endM = endDateObj.getMonth();
+  const endY = endDateObj.getFullYear();
+  const formattedEnd = `${endD} ${MONTH_NAMES[endM]} ${endY}`;
+
+  const monthLabel = months === 1 ? '1 Month' : `${months} Months`;
+  const durationLine = `${monthLabel} (${formattedStart} \u2013 ${formattedEnd})`;
+
+  return {
+    formattedStart,
+    formattedEnd,
+    durationLine,
+  };
+}
+
+/**
+ * Get current local date as YYYY-MM-DD
+ */
+function getLocalTodayIso(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function OfferLetterFormModal({
@@ -19,58 +82,57 @@ export function OfferLetterFormModal({
 }: OfferLetterFormModalProps) {
   const isEditing = Boolean(existingOffer);
 
-  // Helper date formatter
-  const formatDateToReadable = (dateStr: string) => {
+  // Departments list state
+  const [departments, setDepartments] = useState<string[]>([
+    'Technology',
+    'IT',
+    'Marketing',
+    'Management',
+    'Operations',
+    'Design',
+    'Sales',
+    'Human Resources',
+    'Finance',
+  ]);
+
+  // Fetch departments from database on mount
+  useEffect(() => {
+    fetch('/api/departments')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.departments)) {
+          const names = data.departments.map((d: any) => d.name).filter(Boolean);
+          setDepartments((prev) => Array.from(new Set([...names, ...prev])));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Determine initial date
+  const parseIsoFromDate = (dateVal?: string | null): string => {
+    if (!dateVal) return getLocalTodayIso();
+    // If it's already YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateVal)) return dateVal;
     try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-    } catch {
-      return dateStr;
-    }
+      const parsed = new Date(dateVal);
+      if (!isNaN(parsed.getTime())) {
+        const y = parsed.getFullYear();
+        const m = String(parsed.getMonth() + 1).padStart(2, '0');
+        const d = String(parsed.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+    } catch {}
+    return getLocalTodayIso();
   };
 
-  const initialJoiningIso = existingOffer?.joining_date 
-    ? (new Date(existingOffer.joining_date).toISOString().split('T')[0] || new Date().toISOString().split('T')[0])
-    : (person?.joining_date ? new Date(person.joining_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+  const initialJoiningIso = existingOffer?.joining_date
+    ? parseIsoFromDate(existingOffer.joining_date)
+    : parseIsoFromDate(person?.joining_date);
 
   const [joiningIso, setJoiningIso] = useState<string>(initialJoiningIso);
   const [durationMonths, setDurationMonths] = useState<number>(existingOffer?.duration_months || 3);
 
-  // Compute calculated end date & duration text
-  const computeEndDateAndDuration = (startIso: string, months: number) => {
-    try {
-      const start = new Date(startIso);
-      if (isNaN(start.getTime())) {
-        return {
-          formattedStart: startIso,
-          formattedEnd: '',
-          durationText: `${months} Months`,
-        };
-      }
-      const end = new Date(start);
-      end.setMonth(end.getMonth() + months);
-      end.setDate(end.getDate() - 1); // 1 day before anniversary
-
-      const formattedStart = start.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-      const formattedEnd = end.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-      const durationText = `${months} Months (${formattedStart} \u2013 ${formattedEnd})`;
-
-      return {
-        formattedStart,
-        formattedEnd,
-        durationText,
-      };
-    } catch {
-      return {
-        formattedStart: startIso,
-        formattedEnd: '',
-        durationText: `${months} Months`,
-      };
-    }
-  };
-
-  const initialCalculated = computeEndDateAndDuration(initialJoiningIso, existingOffer?.duration_months || 3);
+  const initialCalc = computeOfferDatesAndDuration(initialJoiningIso, existingOffer?.duration_months || 3);
 
   const [formData, setFormData] = useState({
     recipientName: existingOffer?.recipient_name || person?.full_name || '',
@@ -79,13 +141,13 @@ export function OfferLetterFormModal({
     recipientLocation: existingOffer?.recipient_location || person?.work_location || 'Kolkata, West Bengal, India',
     position: existingOffer?.position || person?.designation || (person?.person_type === 'INTERN' ? 'Software Developer Intern' : 'Software Engineer'),
     department: existingOffer?.department || person?.department?.name || 'Technology',
-    joiningDate: existingOffer?.joining_date || initialCalculated.formattedStart,
-    duration: existingOffer?.duration || initialCalculated.durationText,
-    endDate: existingOffer?.end_date || initialCalculated.formattedEnd,
+    joiningDate: existingOffer?.joining_date || initialCalc.formattedStart,
+    duration: existingOffer?.duration || initialCalc.durationLine,
+    endDate: existingOffer?.end_date || initialCalc.formattedEnd,
     stipend: existingOffer?.stipend || 'Unpaid',
-    workMode: existingOffer?.work_mode || 'Remote (with occasional team meetings)',
+    workMode: existingOffer?.work_mode || 'Remote',
     reportingTo: existingOffer?.reporting_to || 'Prithibi Mandi (CTO)',
-    issueDate: existingOffer?.issue_date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+    issueDate: existingOffer?.issue_date || initialCalc.formattedStart,
     signatoryName: existingOffer?.signatory_name || 'ANSH TIWARI',
     signatoryTitle: existingOffer?.signatory_title || 'FOUNDER',
     companyName: existingOffer?.company_name || 'Go_Repireo',
@@ -94,30 +156,34 @@ export function OfferLetterFormModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync when person or existingOffer changes
+  // Sync state if existingOffer or person prop changes
   useEffect(() => {
     if (existingOffer) {
+      const parsedIso = parseIsoFromDate(existingOffer.joining_date);
+      setJoiningIso(parsedIso);
+      setDurationMonths(existingOffer.duration_months || 3);
       setFormData({
         recipientName: existingOffer.recipient_name,
         recipientEmail: existingOffer.recipient_email,
         recipientPhone: existingOffer.recipient_phone || '',
         recipientLocation: existingOffer.recipient_location || '',
         position: existingOffer.position,
-        department: existingOffer.department || '',
+        department: existingOffer.department || 'Technology',
         joiningDate: existingOffer.joining_date,
         duration: existingOffer.duration,
         endDate: existingOffer.end_date || '',
         stipend: existingOffer.stipend,
-        workMode: existingOffer.work_mode,
+        workMode: existingOffer.work_mode || 'Remote',
         reportingTo: existingOffer.reporting_to,
         issueDate: existingOffer.issue_date,
         signatoryName: existingOffer.signatory_name,
         signatoryTitle: existingOffer.signatory_title,
         companyName: existingOffer.company_name,
       });
-      setDurationMonths(existingOffer.duration_months || 3);
     } else if (person) {
-      const calc = computeEndDateAndDuration(new Date().toISOString().split('T')[0], 3);
+      const personIso = parseIsoFromDate(person.joining_date);
+      setJoiningIso(personIso);
+      const calc = computeOfferDatesAndDuration(personIso, 3);
       setFormData((prev) => ({
         ...prev,
         recipientName: person.full_name,
@@ -127,30 +193,31 @@ export function OfferLetterFormModal({
         position: person.designation || (person.person_type === 'INTERN' ? 'Software Developer Intern' : 'Software Engineer'),
         department: person.department?.name || 'Technology',
         joiningDate: calc.formattedStart,
-        duration: calc.durationText,
+        duration: calc.durationLine,
         endDate: calc.formattedEnd,
       }));
     }
   }, [person, existingOffer]);
 
-  // Recalculate duration & end date when joining date picker or duration months changes
+  // Recalculate duration & formatted dates whenever Joining Date Picker changes
   const handleJoiningDateChange = (isoDate: string) => {
     setJoiningIso(isoDate);
-    const calc = computeEndDateAndDuration(isoDate, durationMonths);
+    const calc = computeOfferDatesAndDuration(isoDate, durationMonths);
     setFormData((prev) => ({
       ...prev,
       joiningDate: calc.formattedStart,
-      duration: calc.durationText,
+      duration: calc.durationLine,
       endDate: calc.formattedEnd,
     }));
   };
 
+  // Recalculate duration whenever Duration (Months) changes
   const handleDurationMonthsChange = (months: number) => {
     setDurationMonths(months);
-    const calc = computeEndDateAndDuration(joiningIso, months);
+    const calc = computeOfferDatesAndDuration(joiningIso, months);
     setFormData((prev) => ({
       ...prev,
-      duration: calc.durationText,
+      duration: calc.durationLine,
       endDate: calc.formattedEnd,
     }));
   };
@@ -242,7 +309,7 @@ export function OfferLetterFormModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -329,15 +396,25 @@ export function OfferLetterFormModal({
                 />
               </div>
 
+              {/* Department Dropdown */}
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Department</label>
-                <input
-                  type="text"
+                <label className="block font-semibold text-slate-700 mb-1">Department *</label>
+                <select
+                  required
                   value={formData.department}
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  placeholder="e.g. Technology"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                >
+                  {/* Ensure current value is included if not in default list */}
+                  {formData.department && !departments.includes(formData.department) && (
+                    <option value={formData.department}>{formData.department}</option>
+                  )}
+                  {departments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -352,16 +429,27 @@ export function OfferLetterFormModal({
                 />
               </div>
 
+              {/* Work Mode Dropdown */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Work Mode *</label>
-                <input
-                  type="text"
+                <select
                   required
                   value={formData.workMode}
                   onChange={(e) => setFormData({ ...formData, workMode: e.target.value })}
-                  placeholder="e.g. Remote (with occasional team meetings)"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                >
+                  <option value="Remote">Remote</option>
+                  <option value="On-site">On-site</option>
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="Remote (with occasional team meetings)">
+                    Remote (with occasional team meetings)
+                  </option>
+                  {/* Keep existing custom value if editing */}
+                  {formData.workMode &&
+                    !['Remote', 'On-site', 'Hybrid', 'Remote (with occasional team meetings)'].includes(formData.workMode) && (
+                      <option value={formData.workMode}>{formData.workMode}</option>
+                    )}
+                </select>
               </div>
 
               <div>
@@ -380,10 +468,16 @@ export function OfferLetterFormModal({
 
           {/* Dates & Auto-Calculation */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-              Dates & Duration Calculation
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                Dates & Duration Calculation
+              </h3>
+              <span className="text-[11px] text-indigo-600 flex items-center gap-1 font-medium bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                <Sparkles className="w-3 h-3" /> Auto-synced
+              </span>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Joining Date Picker</label>
@@ -391,7 +485,7 @@ export function OfferLetterFormModal({
                   type="date"
                   value={joiningIso}
                   onChange={(e) => handleJoiningDateChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-medium"
                 />
               </div>
 
@@ -400,12 +494,15 @@ export function OfferLetterFormModal({
                 <select
                   value={durationMonths}
                   onChange={(e) => handleDurationMonthsChange(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-medium"
                 >
                   <option value={1}>1 Month</option>
                   <option value={2}>2 Months</option>
                   <option value={3}>3 Months</option>
+                  <option value={4}>4 Months</option>
+                  <option value={5}>5 Months</option>
                   <option value={6}>6 Months</option>
+                  <option value={9}>9 Months</option>
                   <option value={12}>12 Months</option>
                 </select>
               </div>
@@ -422,30 +519,40 @@ export function OfferLetterFormModal({
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Joining Date on Letter (Formatted)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-semibold text-slate-700">
+                    Joining Date on Letter (Formatted)
+                  </label>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium border border-emerald-200">
+                    Auto-filled
+                  </span>
+                </div>
                 <input
                   type="text"
                   value={formData.joiningDate}
                   onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
                   placeholder="e.g. 10 October 2026"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-mono text-xs"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-mono text-xs text-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Duration Line on Letter (Auto-Computed)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-semibold text-slate-700">
+                    Duration Line on Letter (Auto-Computed)
+                  </label>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium border border-emerald-200">
+                    Auto-computed
+                  </span>
+                </div>
                 <input
                   type="text"
                   value={formData.duration}
                   onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  placeholder="e.g. 3 Months (10 October 2026 – 09 January 2027)"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-mono text-xs"
+                  placeholder="e.g. 3 Months (10 October 2026 – 9 January 2027)"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-mono text-xs text-slate-900"
                 />
               </div>
             </div>
@@ -457,14 +564,14 @@ export function OfferLetterFormModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg transition"
+              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition flex items-center gap-2"
+              className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition flex items-center gap-2 cursor-pointer"
             >
               {loading ? 'Generating...' : isEditing ? 'Save Changes' : 'Generate Offer Letter'}
             </button>
