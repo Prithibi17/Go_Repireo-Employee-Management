@@ -69005,14 +69005,30 @@ async function generateOfficialOfferLetterPdf(offer) {
   const fontBold = await pdfDoc.embedFont(import_pdf_lib2.StandardFonts.HelveticaBold);
   const fontRegular = await pdfDoc.embedFont(import_pdf_lib2.StandardFonts.Helvetica);
   const black = (0, import_pdf_lib2.rgb)(0.04, 0.04, 0.04);
-  const textDark = (0, import_pdf_lib2.rgb)(0.12, 0.12, 0.12);
+  const wrapText = (text, maxWidth, font, fontSize) => {
+    const words = text.split(" ");
+    const lines = [];
+    let currentLine = "";
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+      if (testWidth <= maxWidth) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+    return lines;
+  };
   const formattedDate = offer.issue_date || (/* @__PURE__ */ new Date()).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const dateStr = `Date: ${formattedDate}`;
-  const dateWidth = fontBold.widthOfTextAtSize(dateStr, 12.5);
+  const dateWidth = fontBold.widthOfTextAtSize(dateStr, 13.5);
   page.drawText(dateStr, {
-    x: Math.max(570, 742 - dateWidth),
+    x: Math.max(540, 742 - dateWidth),
     y: 818,
-    size: 12.5,
+    size: 13.5,
     font: fontBold,
     color: black
   });
@@ -69020,8 +69036,8 @@ async function generateOfficialOfferLetterPdf(offer) {
   page.drawText("To,", {
     x: 48,
     y: toY,
-    size: 12.5,
-    font: fontRegular,
+    size: 13.5,
+    font: fontBold,
     color: black
   });
   toY -= 19;
@@ -69029,7 +69045,7 @@ async function generateOfficialOfferLetterPdf(offer) {
   page.drawText(recipientName, {
     x: 48,
     y: toY,
-    size: 13,
+    size: 13.8,
     font: fontBold,
     color: black
   });
@@ -69038,9 +69054,9 @@ async function generateOfficialOfferLetterPdf(offer) {
     page.drawText(offer.recipient_location, {
       x: 48,
       y: toY,
-      size: 11.5,
-      font: fontRegular,
-      color: textDark
+      size: 13.5,
+      font: fontBold,
+      color: black
     });
   }
   if (offer.recipient_email) {
@@ -69048,9 +69064,9 @@ async function generateOfficialOfferLetterPdf(offer) {
     page.drawText(`Email: ${offer.recipient_email}`, {
       x: 48,
       y: toY,
-      size: 11.5,
-      font: fontRegular,
-      color: textDark
+      size: 13.5,
+      font: fontBold,
+      color: black
     });
   }
   if (offer.recipient_phone) {
@@ -69058,41 +69074,38 @@ async function generateOfficialOfferLetterPdf(offer) {
     page.drawText(`Phone: ${offer.recipient_phone}`, {
       x: 48,
       y: toY,
-      size: 11.5,
-      font: fontRegular,
-      color: textDark
+      size: 13.5,
+      font: fontBold,
+      color: black
     });
   }
   page.drawText(`Dear ${recipientName},`, {
     x: 48,
     y: 654,
-    size: 12.5,
+    size: 13.8,
     font: fontBold,
     color: black
   });
   const position = offer.position || "Software Developer Intern";
   const companyPlatform = `${offer.company_name || "Go_Repireo"} (Home Services Platform)`;
-  const line1 = `We are pleased to offer you the position of ${position} at ${companyPlatform}. We`;
-  const line2 = `believe your skills and enthusiasm will be a valuable addition to our team.`;
-  page.drawText(line1, {
-    x: 48,
-    y: 618,
-    size: 11,
-    font: fontRegular,
-    color: textDark
-  });
-  page.drawText(line2, {
-    x: 48,
-    y: 602,
-    size: 11,
-    font: fontRegular,
-    color: textDark
-  });
+  const openingText = `We are pleased to offer you the position of ${position} at ${companyPlatform}. We believe your skills and enthusiasm will be a valuable addition to our team.`;
+  const openingLines = wrapText(openingText, 695, fontBold, 12.8);
+  let openY = 620;
+  for (const line of openingLines) {
+    page.drawText(line, {
+      x: 48,
+      y: openY,
+      size: 12.8,
+      font: fontBold,
+      color: black
+    });
+    openY -= 18;
+  }
   const vx = 238;
   page.drawText(position, {
     x: vx,
     y: 551,
-    size: 11.5,
+    size: 13.5,
     font: fontBold,
     color: black
   });
@@ -69100,7 +69113,7 @@ async function generateOfficialOfferLetterPdf(offer) {
   page.drawText(durationStr, {
     x: vx,
     y: 516.5,
-    size: 11.5,
+    size: 13.5,
     font: fontBold,
     color: black
   });
@@ -69108,7 +69121,7 @@ async function generateOfficialOfferLetterPdf(offer) {
   page.drawText(stipendStr, {
     x: vx,
     y: 482,
-    size: 11.5,
+    size: 13.5,
     font: fontBold,
     color: black
   });
@@ -69116,7 +69129,7 @@ async function generateOfficialOfferLetterPdf(offer) {
   page.drawText(workModeStr, {
     x: vx,
     y: 447.5,
-    size: 11.5,
+    size: 13.5,
     font: fontBold,
     color: black
   });
@@ -69124,7 +69137,7 @@ async function generateOfficialOfferLetterPdf(offer) {
   page.drawText(reportingToStr, {
     x: vx,
     y: 413,
-    size: 11.5,
+    size: 13.5,
     font: fontBold,
     color: black
   });
@@ -69132,7 +69145,7 @@ async function generateOfficialOfferLetterPdf(offer) {
   page.drawText(joiningDateStr, {
     x: vx,
     y: 378.5,
-    size: 11.5,
+    size: 13.5,
     font: fontBold,
     color: black
   });

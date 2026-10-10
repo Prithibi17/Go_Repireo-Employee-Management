@@ -200,7 +200,7 @@ ${offer.signatory_title}, ${offer.company_name || 'Go_Repireo'}`
                 style={{ top: '286px', right: '48px' }}
                 className="absolute z-10 text-right font-sans"
               >
-                <p className="text-[13px] font-bold text-slate-950 tracking-tight">
+                <p className="text-[13.8px] font-bold text-black tracking-tight">
                   Date: {offer.issue_date}
                 </p>
               </div>
@@ -210,14 +210,14 @@ ${offer.signatory_title}, ${offer.company_name || 'Go_Repireo'}`
                 style={{ top: '342px', left: '48px', maxWidth: '420px' }}
                 className="absolute z-10 font-sans text-left space-y-0.5 leading-snug"
               >
-                <p className="text-[13px] text-slate-900 font-normal">To,</p>
-                <p className="text-[14px] font-bold text-slate-950 pt-0.5">{offer.recipient_name}</p>
+                <p className="text-[13.5px] font-bold text-black">To,</p>
+                <p className="text-[14px] font-bold text-black pt-0.5">{offer.recipient_name}</p>
                 {offer.recipient_location && (
-                  <p className="text-[12px] text-slate-800">{offer.recipient_location}</p>
+                  <p className="text-[13.5px] font-bold text-black">{offer.recipient_location}</p>
                 )}
-                <p className="text-[12px] text-slate-800">Email: {offer.recipient_email}</p>
+                <p className="text-[13.5px] font-bold text-black">Email: {offer.recipient_email}</p>
                 {offer.recipient_phone && (
-                  <p className="text-[12px] text-slate-800">Phone: {offer.recipient_phone}</p>
+                  <p className="text-[13.5px] font-bold text-black">Phone: {offer.recipient_phone}</p>
                 )}
               </div>
 
@@ -226,26 +226,25 @@ ${offer.signatory_title}, ${offer.company_name || 'Go_Repireo'}`
                 style={{ top: '454px', left: '48px' }}
                 className="absolute z-10 font-sans"
               >
-                <p className="text-[13px] font-bold text-slate-950">Dear {offer.recipient_name},</p>
+                <p className="text-[14px] font-bold text-black">Dear {offer.recipient_name},</p>
               </div>
 
-              {/* Dynamic Opening Paragraph */}
+              {/* Dynamic Opening Paragraph (Bold, matching closing paragraph) */}
               <div
                 style={{ top: '488px', left: '48px', right: '48px' }}
-                className="absolute z-10 font-sans text-[11.5px] leading-relaxed text-slate-800 text-left"
+                className="absolute z-10 font-sans text-[13px] font-bold leading-[1.4] text-black text-left"
               >
                 <p>
-                  We are pleased to offer you the position of{' '}
-                  <strong className="font-bold text-slate-950">{offer.position}</strong> at{' '}
-                  <strong className="font-bold text-slate-950">{offer.company_name || 'Go_Repireo'} (Home Services Platform)</strong>. We
+                  We are pleased to offer you the position of {offer.position} at{' '}
+                  {offer.company_name || 'Go_Repireo'} (Home Services Platform). We
                   believe your skills and enthusiasm will be a valuable addition to our team.
                 </p>
               </div>
 
-              {/* Dynamic Key Offer Values Column (X: 238px) */}
+              {/* Dynamic Key Offer Values Column (X: 238px, bold 13.8px) */}
               <div
                 style={{ top: '552px', left: '238px', right: '48px' }}
-                className="absolute z-10 font-sans text-[12px] font-bold text-slate-950"
+                className="absolute z-10 font-sans text-[13.8px] font-bold text-black"
               >
                 <p style={{ height: '34.5px' }} className="flex items-center">{offer.position}</p>
                 <p style={{ height: '34.5px' }} className="flex items-center">{offer.duration}</p>
