@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { OfferLetter, Person } from '@/types';
-import { X, Calendar, Briefcase, Mail, Phone, MapPin, User, DollarSign, Building } from 'lucide-react';
+import { X, Calendar, Briefcase, Mail, Phone, MapPin, User, DollarSign } from 'lucide-react';
 
 interface OfferLetterFormModalProps {
   isOpen: boolean;
@@ -446,48 +446,6 @@ export function OfferLetterFormModal({
                   onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                   placeholder="e.g. 3 Months (10 October 2026 – 09 January 2027)"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-mono text-xs"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Signatory Details */}
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
-              <Building className="w-3.5 h-3.5 text-indigo-600" />
-              Signatory & Company
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Signatory Name</label>
-                <input
-                  type="text"
-                  value={formData.signatoryName}
-                  onChange={(e) => setFormData({ ...formData, signatoryName: e.target.value })}
-                  placeholder="e.g. ANSH TIWARI"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Signatory Title</label>
-                <input
-                  type="text"
-                  value={formData.signatoryTitle}
-                  onChange={(e) => setFormData({ ...formData, signatoryTitle: e.target.value })}
-                  placeholder="e.g. FOUNDER"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Company Name</label>
-                <input
-                  type="text"
-                  value={formData.companyName}
-                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  placeholder="e.g. Go_Repireo"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
             </div>
