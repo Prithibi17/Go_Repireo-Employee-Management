@@ -177,95 +177,82 @@ ${offer.signatory_title}, ${offer.company_name || 'Go_Repireo'}`
         </div>
       </div>
 
-      {/* Document Facsimile / Visual Preview */}
+      {/* Document Facsimile / Visual Preview matching official template */}
       {showFullDocument && (
-        <div className="p-6 md:p-8 bg-slate-100/50 flex justify-center">
-          <div className="w-full max-w-2xl bg-white border border-slate-200/90 shadow-md rounded-xl p-8 md:p-10 space-y-6 text-slate-800 text-xs sm:text-sm font-sans leading-relaxed select-text">
-            {/* Header: Company & Date */}
-            <div className="flex items-start justify-between border-b border-slate-200 pb-5">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  {offer.company_name || 'Go_Repireo'}
-                </h1>
-                <p className="text-xs text-slate-500 mt-0.5 font-medium">Home Services Platform</p>
-              </div>
-              <div className="text-right">
-                <span className="font-semibold text-slate-900 text-xs sm:text-sm">
+        <div className="flex flex-col items-center w-full">
+          <p className="text-[11px] text-slate-400 mb-2 sm:hidden text-center">
+            Tip: Swipe horizontally to inspect full offer letter or tap Download PDF
+          </p>
+          <div className="overflow-x-auto w-full flex justify-start sm:justify-center p-3 sm:p-6 rounded-2xl bg-slate-200/50 border border-slate-300/80">
+            <div
+              style={{ width: '792px', height: '1120px' }}
+              className="relative bg-white text-slate-900 shadow-2xl overflow-hidden select-text print:shadow-none print:border-none shrink-0"
+            >
+              {/* Official Template Graphic Background (Mascot, Logo, Ribbons, Signature & Branding) */}
+              <img
+                src="/offer-letter-base.png"
+                alt="Official Go_Repireo Offer Letter Template"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+              />
+
+              {/* Dynamic Date (Top Right) */}
+              <div
+                style={{ top: '286px', right: '48px' }}
+                className="absolute z-10 text-right font-sans"
+              >
+                <p className="text-[13px] font-bold text-slate-950 tracking-tight">
                   Date: {offer.issue_date}
-                </span>
-                <p className="font-mono text-[11px] text-slate-400 mt-0.5">{offer.letter_number}</p>
-              </div>
-            </div>
-
-            {/* Recipient Details */}
-            <div className="space-y-1 text-xs sm:text-sm text-slate-700">
-              <p className="font-medium text-slate-500">To,</p>
-              <p className="font-bold text-slate-900 text-sm sm:text-base">{offer.recipient_name}</p>
-              {offer.recipient_location && <p className="text-slate-600">{offer.recipient_location}</p>}
-              <p className="text-slate-600">Email: {offer.recipient_email}</p>
-              {offer.recipient_phone && <p className="text-slate-600">Phone: {offer.recipient_phone}</p>}
-            </div>
-
-            {/* Salutation */}
-            <div>
-              <p className="font-bold text-slate-900">Dear {offer.recipient_name},</p>
-            </div>
-
-            {/* Opening Paragraph */}
-            <p className="text-slate-700 leading-normal">
-              We are pleased to offer you the position of <strong className="text-slate-900">{offer.position}</strong> at{' '}
-              <strong className="text-slate-900">{offer.company_name || 'Go_Repireo'} (Home Services Platform)</strong>.
-              We believe your skills and enthusiasm will be a valuable addition to our team.
-            </p>
-
-            {/* Offer Key Details Table/Card */}
-            <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 sm:p-5 space-y-2.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                Key Offer Details:
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-2 gap-x-4 text-xs sm:text-sm">
-                <span className="font-medium text-slate-500">&bull; Position:</span>
-                <span className="font-bold text-slate-900 sm:col-span-2">{offer.position}</span>
-
-                <span className="font-medium text-slate-500">&bull; Duration:</span>
-                <span className="font-bold text-slate-900 sm:col-span-2">{offer.duration}</span>
-
-                <span className="font-medium text-slate-500">&bull; Stipend:</span>
-                <span className="font-bold text-slate-900 sm:col-span-2">{offer.stipend}</span>
-
-                <span className="font-medium text-slate-500">&bull; Work Mode:</span>
-                <span className="font-bold text-slate-900 sm:col-span-2">{offer.work_mode}</span>
-
-                <span className="font-medium text-slate-500">&bull; Reporting To:</span>
-                <span className="font-bold text-slate-900 sm:col-span-2">{offer.reporting_to}</span>
-
-                <span className="font-medium text-slate-500">&bull; Joining Date:</span>
-                <span className="font-bold text-slate-900 sm:col-span-2">{offer.joining_date}</span>
-              </div>
-            </div>
-
-            {/* Closing & Signatory */}
-            <div className="pt-4 border-t border-slate-200 flex items-end justify-between">
-              <div>
-                <p className="text-slate-500 text-xs">For {offer.company_name || 'Go_Repireo'}</p>
-                <div className="mt-4">
-                  <p className="font-bold text-slate-900 text-sm tracking-wide uppercase">
-                    {offer.signatory_name}
-                  </p>
-                  <p className="text-xs text-slate-600 font-medium uppercase">
-                    {offer.signatory_title}
-                  </p>
-                </div>
+                </p>
               </div>
 
-              <div className="text-right">
-                <button
-                  onClick={handleDownloadPdf}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Official Template PDF
-                </button>
+              {/* Dynamic Recipient Block */}
+              <div
+                style={{ top: '342px', left: '48px', maxWidth: '420px' }}
+                className="absolute z-10 font-sans text-left space-y-0.5 leading-snug"
+              >
+                <p className="text-[13px] text-slate-900 font-normal">To,</p>
+                <p className="text-[14px] font-bold text-slate-950 pt-0.5">{offer.recipient_name}</p>
+                {offer.recipient_location && (
+                  <p className="text-[12px] text-slate-800">{offer.recipient_location}</p>
+                )}
+                <p className="text-[12px] text-slate-800">Email: {offer.recipient_email}</p>
+                {offer.recipient_phone && (
+                  <p className="text-[12px] text-slate-800">Phone: {offer.recipient_phone}</p>
+                )}
+              </div>
+
+              {/* Dynamic Salutation */}
+              <div
+                style={{ top: '454px', left: '48px' }}
+                className="absolute z-10 font-sans"
+              >
+                <p className="text-[13px] font-bold text-slate-950">Dear {offer.recipient_name},</p>
+              </div>
+
+              {/* Dynamic Opening Paragraph */}
+              <div
+                style={{ top: '488px', left: '48px', right: '48px' }}
+                className="absolute z-10 font-sans text-[11.5px] leading-relaxed text-slate-800 text-left"
+              >
+                <p>
+                  We are pleased to offer you the position of{' '}
+                  <strong className="font-bold text-slate-950">{offer.position}</strong> at{' '}
+                  <strong className="font-bold text-slate-950">{offer.company_name || 'Go_Repireo'} (Home Services Platform)</strong>. We
+                  believe your skills and enthusiasm will be a valuable addition to our team.
+                </p>
+              </div>
+
+              {/* Dynamic Key Offer Values Column (X: 238px) */}
+              <div
+                style={{ top: '552px', left: '238px', right: '48px' }}
+                className="absolute z-10 font-sans text-[12px] font-bold text-slate-950"
+              >
+                <p style={{ height: '34.5px' }} className="flex items-center">{offer.position}</p>
+                <p style={{ height: '34.5px' }} className="flex items-center">{offer.duration}</p>
+                <p style={{ height: '34.5px' }} className="flex items-center">{offer.stipend}</p>
+                <p style={{ height: '34.5px' }} className="flex items-center">{offer.work_mode}</p>
+                <p style={{ height: '34.5px' }} className="flex items-center">{offer.reporting_to}</p>
+                <p style={{ height: '34.5px' }} className="flex items-center">{offer.joining_date}</p>
               </div>
             </div>
           </div>

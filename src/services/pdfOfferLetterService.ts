@@ -6,53 +6,76 @@ import { OfferLetter } from '../types';
 export async function generateOfficialOfferLetterPdf(
   offer: OfferLetter
 ): Promise<Uint8Array> {
-  const templatePath = path.join(process.cwd(), 'public', 'official-offer-letter-template.pdf');
-  const templateBytes = fs.readFileSync(templatePath);
+  const width = 791.25;
+  const height = 1118.25;
 
-  const pdfDoc = await PDFDocument.load(templateBytes);
-  const page = pdfDoc.getPage(0);
+  const pdfDoc = await PDFDocument.create();
+
+  // Load the spotless high-resolution base template
+  let baseBytes: Uint8Array | null = null;
+  const candidatePaths = [
+    path.join(process.cwd(), 'public', 'offer-letter-base.png'),
+    path.join(process.cwd(), 'dist', 'offer-letter-base.png'),
+    path.join(process.cwd(), 'offer-letter-base.png'),
+  ];
+
+  for (const p of candidatePaths) {
+    try {
+      if (fs.existsSync(p)) {
+        baseBytes = fs.readFileSync(p);
+        break;
+      }
+    } catch {
+      // continue
+    }
+  }
+
+  if (!baseBytes) {
+    try {
+      const res = await fetch('https://go-repireo-employee-management.vercel.app/offer-letter-base.png');
+      if (res.ok) {
+        baseBytes = new Uint8Array(await res.arrayBuffer());
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  if (!baseBytes) {
+    throw new Error('Offer letter base template image not found');
+  }
+
+  const baseImg = await pdfDoc.embedPng(baseBytes);
+
+  const page = pdfDoc.addPage([width, height]);
+  page.drawImage(baseImg, {
+    x: 0,
+    y: 0,
+    width,
+    height,
+  });
 
   // Fonts
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  const black = rgb(0, 0, 0);
+  const black = rgb(0.04, 0.04, 0.04);
   const textDark = rgb(0.12, 0.12, 0.12);
-  const white = rgb(1, 1, 1);
 
   // 1. Date (Top-Right)
-  // Cover original Date
-  page.drawRectangle({
-    x: 560,
-    y: 775,
-    width: 190,
-    height: 40,
-    color: white,
-  });
-
   const formattedDate = offer.issue_date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const dateStr = `Date: ${formattedDate}`;
-  const dateWidth = fontBold.widthOfTextAtSize(dateStr, 12);
-  // Align to right edge (~ X: 742)
+  const dateWidth = fontBold.widthOfTextAtSize(dateStr, 12.5);
   page.drawText(dateStr, {
     x: Math.max(570, 742 - dateWidth),
-    y: 790,
-    size: 12,
+    y: 818,
+    size: 12.5,
     font: fontBold,
     color: black,
   });
 
   // 2. "To," Block (Left-Aligned)
-  // Cover original recipient details
-  page.drawRectangle({
-    x: 45,
-    y: 670,
-    width: 480,
-    height: 115,
-    color: white,
-  });
-
-  let toY = 765;
+  let toY = 776;
   page.drawText('To,', {
     x: 48,
     y: toY,
@@ -105,32 +128,15 @@ export async function generateOfficialOfferLetterPdf(
   }
 
   // 3. Salutation Block ("Dear <Recipient Name>,")
-  page.drawRectangle({
-    x: 45,
-    y: 635,
-    width: 450,
-    height: 30,
-    color: white,
-  });
-
   page.drawText(`Dear ${recipientName},`, {
     x: 48,
-    y: 642,
+    y: 654,
     size: 12.5,
     font: fontBold,
     color: black,
   });
 
   // 4. Opening Paragraph
-  // Cover original opening paragraph
-  page.drawRectangle({
-    x: 45,
-    y: 580,
-    width: 700,
-    height: 52,
-    color: white,
-  });
-
   const position = offer.position || 'Software Developer Intern';
   const companyPlatform = `${offer.company_name || 'Go_Repireo'} (Home Services Platform)`;
   const line1 = `We are pleased to offer you the position of ${position} at ${companyPlatform}. We`;
@@ -138,7 +144,7 @@ export async function generateOfficialOfferLetterPdf(
 
   page.drawText(line1, {
     x: 48,
-    y: 610,
+    y: 618,
     size: 11,
     font: fontRegular,
     color: textDark,
@@ -146,26 +152,17 @@ export async function generateOfficialOfferLetterPdf(
 
   page.drawText(line2, {
     x: 48,
-    y: 594,
+    y: 602,
     size: 11,
     font: fontRegular,
     color: textDark,
   });
 
-  // 5. Key Offer Details Values (Right column of bulleted list)
-  // Cover original bullet values
-  page.drawRectangle({
-    x: 230,
-    y: 380,
-    width: 515,
-    height: 200,
-    color: white,
-  });
-
-  // Value lines at precise vertical steps
+  // 5. Key Offer Details Values (Right column aligned at X: 238)
+  const vx = 238;
   page.drawText(position, {
-    x: 238,
-    y: 566,
+    x: vx,
+    y: 551,
     size: 11.5,
     font: fontBold,
     color: black,
@@ -173,8 +170,8 @@ export async function generateOfficialOfferLetterPdf(
 
   const durationStr = offer.duration || '3 Months';
   page.drawText(durationStr, {
-    x: 238,
-    y: 531,
+    x: vx,
+    y: 516.5,
     size: 11.5,
     font: fontBold,
     color: black,
@@ -182,8 +179,8 @@ export async function generateOfficialOfferLetterPdf(
 
   const stipendStr = offer.stipend || 'Unpaid';
   page.drawText(stipendStr, {
-    x: 238,
-    y: 497,
+    x: vx,
+    y: 482,
     size: 11.5,
     font: fontBold,
     color: black,
@@ -191,8 +188,8 @@ export async function generateOfficialOfferLetterPdf(
 
   const workModeStr = offer.work_mode || 'Remote (with occasional team meetings)';
   page.drawText(workModeStr, {
-    x: 238,
-    y: 463,
+    x: vx,
+    y: 447.5,
     size: 11.5,
     font: fontBold,
     color: black,
@@ -200,8 +197,8 @@ export async function generateOfficialOfferLetterPdf(
 
   const reportingToStr = offer.reporting_to || 'Prithibi Mandi (CTO)';
   page.drawText(reportingToStr, {
-    x: 238,
-    y: 428,
+    x: vx,
+    y: 413,
     size: 11.5,
     font: fontBold,
     color: black,
@@ -209,44 +206,12 @@ export async function generateOfficialOfferLetterPdf(
 
   const joiningDateStr = offer.joining_date || '10 October 2026';
   page.drawText(joiningDateStr, {
-    x: 238,
-    y: 394,
+    x: vx,
+    y: 378.5,
     size: 11.5,
     font: fontBold,
     color: black,
   });
-
-  // 6. Signatory (if custom signatory specified, overlay signatory name & title)
-  if (offer.signatory_name && offer.signatory_name !== 'ANSH TIWARI') {
-    page.drawRectangle({
-      x: 70,
-      y: 110,
-      width: 250,
-      height: 45,
-      color: white,
-    });
-    page.drawText(offer.signatory_name.toUpperCase(), {
-      x: 74,
-      y: 138,
-      size: 13,
-      font: fontBold,
-      color: black,
-    });
-    page.drawText((offer.signatory_title || 'FOUNDER').toUpperCase(), {
-      x: 74,
-      y: 124,
-      size: 11,
-      font: fontRegular,
-      color: textDark,
-    });
-    page.drawText(offer.company_name || 'Go_Repireo', {
-      x: 74,
-      y: 110,
-      size: 11,
-      font: fontRegular,
-      color: textDark,
-    });
-  }
 
   return await pdfDoc.save();
 }
