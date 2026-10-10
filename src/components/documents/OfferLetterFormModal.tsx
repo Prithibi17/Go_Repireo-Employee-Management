@@ -82,27 +82,25 @@ export function OfferLetterFormModal({
 }: OfferLetterFormModalProps) {
   const isEditing = Boolean(existingOffer);
 
-  // Departments list state
-  const [departments, setDepartments] = useState<string[]>([
-    'Technology',
-    'IT',
-    'Marketing',
-    'Management',
-    'Operations',
-    'Design',
-    'Sales',
-    'Human Resources',
-    'Finance',
-  ]);
+  // Departments list state - strictly loaded from configured departments in Settings
+  const [departments, setDepartments] = useState<string[]>([]);
 
-  // Fetch departments from database on mount
+  // Fetch configured departments from database on mount
   useEffect(() => {
     fetch('/api/departments')
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.departments)) {
           const names = data.departments.map((d: any) => d.name).filter(Boolean);
-          setDepartments((prev) => Array.from(new Set([...names, ...prev])));
+          setDepartments(names);
+          // Pre-select first configured department if none is selected yet
+          setFormData((prev) => {
+            const currentValid = prev.department && names.includes(prev.department);
+            return {
+              ...prev,
+              department: currentValid ? prev.department : (names[0] || ''),
+            };
+          });
         }
       })
       .catch(() => {});
@@ -140,7 +138,7 @@ export function OfferLetterFormModal({
     recipientPhone: existingOffer?.recipient_phone || person?.phone || '',
     recipientLocation: existingOffer?.recipient_location || person?.work_location || 'Kolkata, West Bengal, India',
     position: existingOffer?.position || person?.designation || (person?.person_type === 'INTERN' ? 'Software Developer Intern' : 'Software Engineer'),
-    department: existingOffer?.department || person?.department?.name || 'Technology',
+    department: existingOffer?.department || person?.department?.name || '',
     joiningDate: existingOffer?.joining_date || initialCalc.formattedStart,
     duration: existingOffer?.duration || initialCalc.durationLine,
     endDate: existingOffer?.end_date || initialCalc.formattedEnd,
@@ -168,7 +166,7 @@ export function OfferLetterFormModal({
         recipientPhone: existingOffer.recipient_phone || '',
         recipientLocation: existingOffer.recipient_location || '',
         position: existingOffer.position,
-        department: existingOffer.department || 'Technology',
+        department: existingOffer.department || '',
         joiningDate: existingOffer.joining_date,
         duration: existingOffer.duration,
         endDate: existingOffer.end_date || '',
@@ -191,7 +189,7 @@ export function OfferLetterFormModal({
         recipientPhone: person.phone || '',
         recipientLocation: person.work_location || 'Kolkata, West Bengal, India',
         position: person.designation || (person.person_type === 'INTERN' ? 'Software Developer Intern' : 'Software Engineer'),
-        department: person.department?.name || 'Technology',
+        department: person.department?.name || '',
         joiningDate: calc.formattedStart,
         duration: calc.durationLine,
         endDate: calc.formattedEnd,
@@ -405,15 +403,17 @@ export function OfferLetterFormModal({
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
                 >
-                  {/* Ensure current value is included if not in default list */}
-                  {formData.department && !departments.includes(formData.department) && (
-                    <option value={formData.department}>{formData.department}</option>
+                  {departments.length === 0 && (
+                    <option value="">No configured departments</option>
                   )}
                   {departments.map((dept) => (
                     <option key={dept} value={dept}>
                       {dept}
                     </option>
                   ))}
+                  {isEditing && formData.department && !departments.includes(formData.department) && (
+                    <option value={formData.department}>{formData.department} (Historical)</option>
+                  )}
                 </select>
               </div>
 
