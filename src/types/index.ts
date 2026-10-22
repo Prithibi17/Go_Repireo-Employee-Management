@@ -295,6 +295,34 @@ export interface PublicCertificateVerificationResponse {
   };
 }
 
+export interface PublicCertificateData {
+  certificateId: string;
+  personName: string;
+  departmentName: string;
+  positionTitle: string;
+  engagementType: 'internship' | 'employment' | 'training' | 'project';
+  startDate: string;
+  endDate: string;
+  verificationStatus: 'verified' | 'revoked' | 'expired';
+  certificateTitle?: string;
+  description?: string;
+  skills?: string[];
+  issuedDate: string;
+  issuerName: string;
+  employeeOrInternId?: string;
+  revokedReason?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  verificationUrl?: string;
+  pdfUrl?: string;
+}
+
+export interface PublicCertificateApiResponse {
+  found: boolean;
+  certificate?: PublicCertificateData;
+  error?: string;
+}
+
 export interface PublicCardApiResponse {
   success: boolean;
   found: boolean;

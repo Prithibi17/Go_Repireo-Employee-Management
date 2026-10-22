@@ -440,18 +440,41 @@ app.get('/api/certificates', async (c) => {
   }
 });
 
+app.options('/api/certificates/:id', (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  c.header('Access-Control-Allow-Headers', 'Content-Type, X-API-Key');
+  return c.text('', 204);
+});
+
 app.get('/api/certificates/:id', async (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
   try {
     const id = c.req.param('id');
-    const certificate = await DataService.getCertificateById(id);
-    if (!certificate) {
-      return c.json({ success: false, error: 'Certificate not found' }, 404);
+    const url = new URL(c.req.url);
+    const origin = `${url.protocol}//${url.host}`;
+
+    if (id.startsWith('cert-')) {
+      const certificate = await DataService.getCertificateById(id);
+      if (certificate) {
+        const company = await DataService.getCompanySettings();
+        const activityLogs = await DataService.getActivityLogsForEntity('CERTIFICATE', certificate.id);
+        return c.json({ success: true, certificate, company, activityLogs });
+      }
     }
-    const company = await DataService.getCompanySettings();
-    const activityLogs = await DataService.getActivityLogsForEntity('CERTIFICATE', certificate.id);
-    return c.json({ success: true, certificate, company, activityLogs });
+
+    // Resolve public certificate by certificate number (e.g. GRC-2026-00125), token, or person code
+    const pubResult = await DataService.getPublicCertificateByIdentifier(id, origin);
+    if (!pubResult.found) {
+      if (id.startsWith('cert-')) {
+        return c.json({ success: false, error: 'Certificate not found' }, 404);
+      }
+      return c.json({ found: false }, 404);
+    }
+    return c.json(pubResult, 200);
   } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 500);
+    return c.json({ success: false, found: false, error: err.message }, 500);
   }
 });
 
@@ -1058,6 +1081,61 @@ app.get('/api/public/cards/:identifier/qr', async (c) => {
     const buffer = await DataService.getPublicCardQrBuffer(identifier, origin);
     if (!buffer) {
       return c.text('QR code not found for identifier', 404);
+    }
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  } catch (err: any) {
+    return c.text(`Failed to generate QR: ${err.message}`, 500);
+  }
+});
+
+// === PUBLIC CERTIFICATES API FOR EXTERNAL WEBSITES (CORS-ENABLED) ===
+app.options('/api/public/certificates/:identifier', (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  c.header('Access-Control-Allow-Headers', 'Content-Type, X-API-Key');
+  return c.text('', 204);
+});
+
+app.get('/api/public/certificates/:identifier', async (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  c.header('Cache-Control', 'public, max-age=60, s-maxage=300');
+  try {
+    const identifier = c.req.param('identifier');
+    const url = new URL(c.req.url);
+    const origin = `${url.protocol}//${url.host}`;
+    const result = await DataService.getPublicCertificateByIdentifier(identifier, origin);
+    if (!result.found) {
+      return c.json({ found: false }, 404);
+    }
+    return c.json(result, 200);
+  } catch (err: any) {
+    return c.json({ found: false, error: err.message }, 500);
+  }
+});
+
+app.options('/api/public/certificates/:identifier/qr', (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  return c.text('', 204);
+});
+
+app.get('/api/public/certificates/:identifier/qr', async (c) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  try {
+    const identifier = c.req.param('identifier');
+    const url = new URL(c.req.url);
+    const origin = `${url.protocol}//${url.host}`;
+    const buffer = await DataService.getPublicCertificateQrBuffer(identifier, origin);
+    if (!buffer) {
+      return c.text('QR code not found for certificate identifier', 404);
     }
     return new Response(buffer, {
       status: 200,

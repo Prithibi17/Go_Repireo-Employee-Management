@@ -6,6 +6,7 @@ import {
   Person, Internship, IdCard, Certificate, ActivityLog, 
   CompanySettings, Department, Profile, PublicIdVerificationResponse, 
   PublicCertificateVerificationResponse, PublicCardApiResponse,
+  PublicCertificateApiResponse, PublicCertificateData,
   ApiKey, PromoteInternData, EmployeeAgreement
 } from '../types';
 import { PersonFormData } from '../validators';
@@ -2255,6 +2256,158 @@ export const DataService = {
       return null;
     }
     return QRCode.toBuffer(data.card.verification_url, {
+      type: 'png',
+      width: 400,
+      margin: 1,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+      errorCorrectionLevel: 'M',
+    });
+  },
+
+  // === PUBLIC CERTIFICATE API FOR EXTERNAL WEBSITES ===
+  async getPublicCertificateByIdentifier(identifier: string, origin?: string): Promise<PublicCertificateApiResponse> {
+    await ensureDb();
+    const db = getTursoClient();
+    const cleanId = identifier.trim();
+    const company = await this.getCompanySettings();
+    const appBaseUrl = origin || 'https://go-repireo-employee-management.vercel.app';
+
+    // 1. Check certificate by certificate_number, public_verification_code, id, or person_code_snapshot
+    let certRow: any = null;
+
+    const certRes = await db.execute({
+      sql: `SELECT c.*, p.company_email, p.personal_email, p.status as person_status
+            FROM certificates c
+            LEFT JOIN people p ON c.person_id = p.id
+            WHERE UPPER(c.certificate_number) = UPPER(?)
+               OR c.public_verification_code = ?
+               OR c.id = ?
+               OR UPPER(c.person_code_snapshot) = UPPER(?)
+               OR (c.person_code_snapshot LIKE 'GRE-%' AND UPPER(REPLACE(c.person_code_snapshot, 'GRE-', 'GRI-')) = UPPER(?))
+               OR (c.person_code_snapshot LIKE 'GRI-%' AND UPPER(REPLACE(c.person_code_snapshot, 'GRI-', 'GRE-')) = UPPER(?))
+            ORDER BY (CASE WHEN c.status = 'ISSUED' THEN 0 ELSE 1 END), c.created_at DESC
+            LIMIT 1`,
+      args: [cleanId, cleanId, cleanId, cleanId, cleanId, cleanId],
+    });
+
+    if (certRes.rows.length > 0) {
+      certRow = certRes.rows[0];
+    } else {
+      // 2. Fallback: check if cleanId is a raw token in verification_tokens
+      const tokenHash = hashToken(cleanId);
+      const tokRes = await db.execute({
+        sql: "SELECT * FROM verification_tokens WHERE token_hash = ? AND resource_type = 'CERTIFICATE' LIMIT 1",
+        args: [tokenHash],
+      });
+      if (tokRes.rows.length > 0) {
+        const tokenId = String(tokRes.rows[0].resource_id);
+        const fallbackRes = await db.execute({
+          sql: `SELECT c.*, p.company_email, p.personal_email, p.status as person_status
+                FROM certificates c
+                LEFT JOIN people p ON c.person_id = p.id
+                WHERE c.id = ? LIMIT 1`,
+          args: [tokenId],
+        });
+        if (fallbackRes.rows.length > 0) {
+          certRow = fallbackRes.rows[0];
+        }
+      }
+    }
+
+    if (!certRow) {
+      return { found: false };
+    }
+
+    // Engagement Type mapping
+    let engagementType: 'internship' | 'employment' | 'training' | 'project' = 'internship';
+    const cType = String(certRow.certificate_type || '').toUpperCase();
+    if (cType.includes('EMPLOY') || cType === 'EXPERIENCE') {
+      engagementType = 'employment';
+    } else if (cType.includes('TRAIN')) {
+      engagementType = 'training';
+    } else if (cType.includes('PROJECT')) {
+      engagementType = 'project';
+    } else if (cType.includes('INTERN')) {
+      engagementType = 'internship';
+    } else if (String(certRow.person_code_snapshot || '').startsWith('GRE-')) {
+      engagementType = 'employment';
+    }
+
+    // Verification Status mapping
+    let verificationStatus: 'verified' | 'revoked' | 'expired' = 'verified';
+    if (certRow.status === 'REVOKED') {
+      verificationStatus = 'revoked';
+    } else {
+      verificationStatus = 'verified';
+    }
+
+    const certId = String(certRow.certificate_number || certRow.id);
+    const verifyCode = String(certRow.public_verification_code || '');
+    const verifyUrl = `${appBaseUrl}/verify/certificate/${verifyCode || certId}`;
+    const pdfUrl = `${appBaseUrl}/api/certificates/${certRow.id}/download`;
+
+    // Skills extraction
+    const skillsList: string[] = [];
+    if (certRow.domain_snapshot) {
+      String(certRow.domain_snapshot)
+        .split(/[,/|]+/)
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+        .forEach((s: string) => skillsList.push(s));
+    }
+
+    const dept = String(certRow.department_snapshot || 'Engineering');
+    const role = String(certRow.role_snapshot || 'Associate');
+    const title = engagementType === 'internship'
+      ? 'Internship Completion Certificate'
+      : engagementType === 'employment'
+      ? 'Experience & Service Certificate'
+      : 'Certificate of Achievement';
+
+    const desc = certRow.project_snapshot
+      ? `Successfully completed tenure in ${dept} working on ${certRow.project_snapshot}.`
+      : `Successfully completed ${engagementType} program in ${dept} as ${role}.`;
+
+    const certData: PublicCertificateData = {
+      certificateId: certId,
+      personName: String(certRow.recipient_name_snapshot),
+      departmentName: dept,
+      positionTitle: role,
+      engagementType,
+      startDate: String(certRow.start_date_snapshot).split('T')[0],
+      endDate: String(certRow.end_date_snapshot).split('T')[0],
+      verificationStatus,
+      certificateTitle: title,
+      description: desc,
+      skills: skillsList.length > 0 ? skillsList : undefined,
+      issuedDate: String(certRow.issue_date || certRow.issued_at || '').split('T')[0],
+      issuerName: company.company_name || 'Go_Repireo',
+      employeeOrInternId: String(certRow.person_code_snapshot),
+      createdAt: String(certRow.created_at || ''),
+      updatedAt: String(certRow.updated_at || ''),
+      verificationUrl: verifyUrl,
+      pdfUrl: pdfUrl,
+    };
+
+    if (verificationStatus === 'revoked') {
+      certData.revokedReason = String(certRow.revocation_reason || 'Certificate revoked by organization');
+    }
+
+    return {
+      found: true,
+      certificate: certData,
+    };
+  },
+
+  async getPublicCertificateQrBuffer(identifier: string, origin?: string): Promise<Buffer | null> {
+    const data = await this.getPublicCertificateByIdentifier(identifier, origin);
+    if (!data.found || !data.certificate?.verificationUrl) {
+      return null;
+    }
+    return QRCode.toBuffer(data.certificate.verificationUrl, {
       type: 'png',
       width: 400,
       margin: 1,

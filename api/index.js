@@ -48900,6 +48900,128 @@ var DataService = {
       errorCorrectionLevel: "M"
     });
   },
+  // === PUBLIC CERTIFICATE API FOR EXTERNAL WEBSITES ===
+  async getPublicCertificateByIdentifier(identifier, origin) {
+    await ensureDb();
+    const db = getTursoClient();
+    const cleanId = identifier.trim();
+    const company = await this.getCompanySettings();
+    const appBaseUrl = origin || "https://go-repireo-employee-management.vercel.app";
+    let certRow = null;
+    const certRes = await db.execute({
+      sql: `SELECT c.*, p.company_email, p.personal_email, p.status as person_status
+            FROM certificates c
+            LEFT JOIN people p ON c.person_id = p.id
+            WHERE UPPER(c.certificate_number) = UPPER(?)
+               OR c.public_verification_code = ?
+               OR c.id = ?
+               OR UPPER(c.person_code_snapshot) = UPPER(?)
+               OR (c.person_code_snapshot LIKE 'GRE-%' AND UPPER(REPLACE(c.person_code_snapshot, 'GRE-', 'GRI-')) = UPPER(?))
+               OR (c.person_code_snapshot LIKE 'GRI-%' AND UPPER(REPLACE(c.person_code_snapshot, 'GRI-', 'GRE-')) = UPPER(?))
+            ORDER BY (CASE WHEN c.status = 'ISSUED' THEN 0 ELSE 1 END), c.created_at DESC
+            LIMIT 1`,
+      args: [cleanId, cleanId, cleanId, cleanId, cleanId, cleanId]
+    });
+    if (certRes.rows.length > 0) {
+      certRow = certRes.rows[0];
+    } else {
+      const tokenHash = hashToken(cleanId);
+      const tokRes = await db.execute({
+        sql: "SELECT * FROM verification_tokens WHERE token_hash = ? AND resource_type = 'CERTIFICATE' LIMIT 1",
+        args: [tokenHash]
+      });
+      if (tokRes.rows.length > 0) {
+        const tokenId = String(tokRes.rows[0].resource_id);
+        const fallbackRes = await db.execute({
+          sql: `SELECT c.*, p.company_email, p.personal_email, p.status as person_status
+                FROM certificates c
+                LEFT JOIN people p ON c.person_id = p.id
+                WHERE c.id = ? LIMIT 1`,
+          args: [tokenId]
+        });
+        if (fallbackRes.rows.length > 0) {
+          certRow = fallbackRes.rows[0];
+        }
+      }
+    }
+    if (!certRow) {
+      return { found: false };
+    }
+    let engagementType = "internship";
+    const cType = String(certRow.certificate_type || "").toUpperCase();
+    if (cType.includes("EMPLOY") || cType === "EXPERIENCE") {
+      engagementType = "employment";
+    } else if (cType.includes("TRAIN")) {
+      engagementType = "training";
+    } else if (cType.includes("PROJECT")) {
+      engagementType = "project";
+    } else if (cType.includes("INTERN")) {
+      engagementType = "internship";
+    } else if (String(certRow.person_code_snapshot || "").startsWith("GRE-")) {
+      engagementType = "employment";
+    }
+    let verificationStatus = "verified";
+    if (certRow.status === "REVOKED") {
+      verificationStatus = "revoked";
+    } else {
+      verificationStatus = "verified";
+    }
+    const certId = String(certRow.certificate_number || certRow.id);
+    const verifyCode = String(certRow.public_verification_code || "");
+    const verifyUrl = `${appBaseUrl}/verify/certificate/${verifyCode || certId}`;
+    const pdfUrl = `${appBaseUrl}/api/certificates/${certRow.id}/download`;
+    const skillsList = [];
+    if (certRow.domain_snapshot) {
+      String(certRow.domain_snapshot).split(/[,/|]+/).map((s) => s.trim()).filter(Boolean).forEach((s) => skillsList.push(s));
+    }
+    const dept = String(certRow.department_snapshot || "Engineering");
+    const role = String(certRow.role_snapshot || "Associate");
+    const title = engagementType === "internship" ? "Internship Completion Certificate" : engagementType === "employment" ? "Experience & Service Certificate" : "Certificate of Achievement";
+    const desc = certRow.project_snapshot ? `Successfully completed tenure in ${dept} working on ${certRow.project_snapshot}.` : `Successfully completed ${engagementType} program in ${dept} as ${role}.`;
+    const certData = {
+      certificateId: certId,
+      personName: String(certRow.recipient_name_snapshot),
+      departmentName: dept,
+      positionTitle: role,
+      engagementType,
+      startDate: String(certRow.start_date_snapshot).split("T")[0],
+      endDate: String(certRow.end_date_snapshot).split("T")[0],
+      verificationStatus,
+      certificateTitle: title,
+      description: desc,
+      skills: skillsList.length > 0 ? skillsList : void 0,
+      issuedDate: String(certRow.issue_date || certRow.issued_at || "").split("T")[0],
+      issuerName: company.company_name || "Go_Repireo",
+      employeeOrInternId: String(certRow.person_code_snapshot),
+      createdAt: String(certRow.created_at || ""),
+      updatedAt: String(certRow.updated_at || ""),
+      verificationUrl: verifyUrl,
+      pdfUrl
+    };
+    if (verificationStatus === "revoked") {
+      certData.revokedReason = String(certRow.revocation_reason || "Certificate revoked by organization");
+    }
+    return {
+      found: true,
+      certificate: certData
+    };
+  },
+  async getPublicCertificateQrBuffer(identifier, origin) {
+    const data = await this.getPublicCertificateByIdentifier(identifier, origin);
+    if (!data.found || !data.certificate?.verificationUrl) {
+      return null;
+    }
+    return import_qrcode.default.toBuffer(data.certificate.verificationUrl, {
+      type: "png",
+      width: 400,
+      margin: 1,
+      color: {
+        dark: "#0f172a",
+        light: "#ffffff"
+      },
+      errorCorrectionLevel: "M"
+    });
+  },
   // === API KEYS MANAGEMENT ===
   async getApiKeys() {
     await ensureDb();
@@ -69909,18 +70031,37 @@ app.get("/api/certificates", async (c) => {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
+app.options("/api/certificates/:id", (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  c.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
+  return c.text("", 204);
+});
 app.get("/api/certificates/:id", async (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
   try {
     const id = c.req.param("id");
-    const certificate = await DataService.getCertificateById(id);
-    if (!certificate) {
-      return c.json({ success: false, error: "Certificate not found" }, 404);
+    const url2 = new URL(c.req.url);
+    const origin = `${url2.protocol}//${url2.host}`;
+    if (id.startsWith("cert-")) {
+      const certificate = await DataService.getCertificateById(id);
+      if (certificate) {
+        const company = await DataService.getCompanySettings();
+        const activityLogs = await DataService.getActivityLogsForEntity("CERTIFICATE", certificate.id);
+        return c.json({ success: true, certificate, company, activityLogs });
+      }
     }
-    const company = await DataService.getCompanySettings();
-    const activityLogs = await DataService.getActivityLogsForEntity("CERTIFICATE", certificate.id);
-    return c.json({ success: true, certificate, company, activityLogs });
+    const pubResult = await DataService.getPublicCertificateByIdentifier(id, origin);
+    if (!pubResult.found) {
+      if (id.startsWith("cert-")) {
+        return c.json({ success: false, error: "Certificate not found" }, 404);
+      }
+      return c.json({ found: false }, 404);
+    }
+    return c.json(pubResult, 200);
   } catch (err) {
-    return c.json({ success: false, error: err.message }, 500);
+    return c.json({ success: false, found: false, error: err.message }, 500);
   }
 });
 app.post("/api/certificates/issue", async (c) => {
@@ -70432,6 +70573,56 @@ app.get("/api/public/cards/:identifier/qr", async (c) => {
     const buffer = await DataService.getPublicCardQrBuffer(identifier, origin);
     if (!buffer) {
       return c.text("QR code not found for identifier", 404);
+    }
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "image/png",
+        "Cache-Control": "public, max-age=3600, s-maxage=86400",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+  } catch (err) {
+    return c.text(`Failed to generate QR: ${err.message}`, 500);
+  }
+});
+app.options("/api/public/certificates/:identifier", (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  c.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
+  return c.text("", 204);
+});
+app.get("/api/public/certificates/:identifier", async (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  c.header("Cache-Control", "public, max-age=60, s-maxage=300");
+  try {
+    const identifier = c.req.param("identifier");
+    const url2 = new URL(c.req.url);
+    const origin = `${url2.protocol}//${url2.host}`;
+    const result = await DataService.getPublicCertificateByIdentifier(identifier, origin);
+    if (!result.found) {
+      return c.json({ found: false }, 404);
+    }
+    return c.json(result, 200);
+  } catch (err) {
+    return c.json({ found: false, error: err.message }, 500);
+  }
+});
+app.options("/api/public/certificates/:identifier/qr", (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  return c.text("", 204);
+});
+app.get("/api/public/certificates/:identifier/qr", async (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  try {
+    const identifier = c.req.param("identifier");
+    const url2 = new URL(c.req.url);
+    const origin = `${url2.protocol}//${url2.host}`;
+    const buffer = await DataService.getPublicCertificateQrBuffer(identifier, origin);
+    if (!buffer) {
+      return c.text("QR code not found for certificate identifier", 404);
     }
     return new Response(buffer, {
       status: 200,

@@ -18,14 +18,17 @@ export function ApiDocsPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // Active code snippet tabs per endpoint
-  const [activeCodeSnippet, setActiveCodeSnippet] = useState<Record<string, 'curl' | 'js' | 'response'>>({
+  const [activeCodeSnippet, setActiveCodeSnippet] = useState<Record<string, 'curl' | 'js' | 'response' | 'html' | 'iframe'>>({
     cardMeta: 'curl',
     cardQr: 'html',
     cardEmbed: 'iframe',
+    certMeta: 'curl',
+    certQr: 'html',
   });
 
   // API Console State
-  const [testId, setTestId] = useState('GRI-6Q5PVVA');
+  const [consoleEndpoint, setConsoleEndpoint] = useState<'cards' | 'certificates'>('certificates');
+  const [testId, setTestId] = useState('GRC-2026-00125');
   const [testLoading, setTestLoading] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
   const [testStatus, setTestStatus] = useState<number | null>(null);
@@ -53,7 +56,10 @@ export function ApiDocsPage() {
     setTestResult(null);
     setTestStatus(null);
     try {
-      const res = await fetch(`/api/public/cards/${encodeURIComponent(testId.trim())}`);
+      const endpoint = consoleEndpoint === 'certificates'
+        ? `/api/public/certificates/${encodeURIComponent(testId.trim())}`
+        : `/api/public/cards/${encodeURIComponent(testId.trim())}`;
+      const res = await fetch(endpoint);
       setTestStatus(res.status);
       const json = await res.json();
       setTestResult(json);
@@ -419,6 +425,210 @@ if (result.found) {
               </div>
             </div>
           </div>
+
+          {/* Endpoint 4: Certificate Verification Metadata */}
+          <div className="rounded-xl border border-zinc-200 bg-white shadow-xs overflow-hidden">
+            <div className="p-5 border-b border-zinc-100 flex flex-wrap items-center justify-between gap-3 bg-zinc-50/50">
+              <div className="flex items-center gap-2.5">
+                <span className="px-2 py-0.5 rounded font-mono text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  GET
+                </span>
+                <span className="font-mono text-[13px] font-semibold text-zinc-900">
+                  /api/public/certificates/:identifier
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Alias: /api/certificates/:identifier
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-zinc-500">
+                Response: application/json
+              </span>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <p className="text-[13px] text-zinc-600 leading-relaxed">
+                Primary integration endpoint for external websites to verify internship completion and experience certificates. Resolves public certificate IDs (<code className="font-mono text-xs bg-zinc-100 px-1 py-0.5 rounded border border-zinc-200 text-zinc-800">GRC-2026-00125</code>), internal token hashes, or intern codes (<code className="font-mono text-xs bg-zinc-100 px-1 py-0.5 rounded border border-zinc-200 text-zinc-800">GRI-XXXXXXX</code>). Supports CORS (<code className="font-mono text-xs bg-zinc-100 px-1 py-0.5 rounded border border-zinc-200 text-zinc-800">Access-Control-Allow-Origin: *</code>) for seamless client-side fetch from any website domain.
+              </p>
+
+              {/* Parameters Table */}
+              <div>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-2 font-mono">
+                  Path Parameters
+                </h4>
+                <div className="border border-zinc-200 rounded-lg overflow-hidden text-xs">
+                  <table className="w-full text-left">
+                    <thead className="bg-zinc-50 text-zinc-500 border-b border-zinc-200 text-[11px] font-mono">
+                      <tr>
+                        <th className="py-2 px-3 font-semibold">Parameter</th>
+                        <th className="py-2 px-3 font-semibold">Type</th>
+                        <th className="py-2 px-3 font-semibold">Required</th>
+                        <th className="py-2 px-3 font-semibold">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100 text-zinc-700">
+                      <tr>
+                        <td className="py-2.5 px-3 font-mono text-zinc-900 font-medium">identifier</td>
+                        <td className="py-2.5 px-3 font-mono text-zinc-500 text-[11px]">string</td>
+                        <td className="py-2.5 px-3 font-semibold text-zinc-900">Required</td>
+                        <td className="py-2.5 px-3 text-zinc-600">Certificate ID (e.g. <code className="font-mono text-[11px]">GRC-2026-00125</code>) or public verification code</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Code Examples */}
+              <div className="rounded-lg border border-zinc-800 bg-[#0c0d0e] overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800 text-xs">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setActiveCodeSnippet((p) => ({ ...p, certMeta: 'curl' }))}
+                      className={`px-2 py-0.8 rounded text-[11px] font-mono transition ${
+                        activeCodeSnippet.certMeta === 'curl' ? 'bg-zinc-800 text-white font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      cURL
+                    </button>
+                    <button
+                      onClick={() => setActiveCodeSnippet((p) => ({ ...p, certMeta: 'js' }))}
+                      className={`px-2 py-0.8 rounded text-[11px] font-mono transition ${
+                        activeCodeSnippet.certMeta === 'js' ? 'bg-zinc-800 text-white font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      JavaScript
+                    </button>
+                    <button
+                      onClick={() => setActiveCodeSnippet((p) => ({ ...p, certMeta: 'response' }))}
+                      className={`px-2 py-0.8 rounded text-[11px] font-mono transition ${
+                        activeCodeSnippet.certMeta === 'response' ? 'bg-zinc-800 text-emerald-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      Response Schema
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const textToCopy =
+                        activeCodeSnippet.certMeta === 'curl'
+                          ? `curl -X GET "${baseUrl}/api/public/certificates/GRC-2026-00125" -H "Accept: application/json"`
+                          : activeCodeSnippet.certMeta === 'js'
+                          ? `const res = await fetch('${baseUrl}/api/public/certificates/GRC-2026-00125');\nconst data = await res.json();\nconsole.log(data);`
+                          : JSON.stringify(
+                              {
+                                found: true,
+                                certificate: {
+                                  certificateId: "GRC-2026-00125",
+                                  personName: "Rahul Sharma",
+                                  departmentName: "Software Development",
+                                  positionTitle: "Frontend Developer Intern",
+                                  engagementType: "internship",
+                                  startDate: "2026-01-01",
+                                  endDate: "2026-06-30",
+                                  verificationStatus: "verified",
+                                  certificateTitle: "Internship Completion Certificate",
+                                  description: "Successfully completed frontend development internship.",
+                                  skills: ["React", "Next.js", "TypeScript"],
+                                  issuedDate: "2026-07-05",
+                                  issuerName: "Go_Repireo",
+                                  employeeOrInternId: "GRI-0125"
+                                }
+                              },
+                              null,
+                              2
+                            );
+                      copyToClipboard(textToCopy, 'cert-meta-code');
+                    }}
+                    className="p-1 rounded text-zinc-400 hover:text-zinc-200 transition"
+                  >
+                    {copiedKey === 'cert-meta-code' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <div className="p-3 text-[12px] font-mono text-zinc-300 overflow-x-auto">
+                  {activeCodeSnippet.certMeta === 'curl' && (
+                    <pre><code>{`curl -X GET "${baseUrl}/api/public/certificates/GRC-2026-00125" \\
+  -H "Accept: application/json"`}</code></pre>
+                  )}
+                  {activeCodeSnippet.certMeta === 'js' && (
+                    <pre><code>{`// Client-side JavaScript (Next.js, React, Vanilla)
+const res = await fetch('${baseUrl}/api/public/certificates/GRC-2026-00125');
+const data = await res.json();
+
+if (data.found) {
+  console.log('Holder:', data.certificate.personName);
+  console.log('Role:', data.certificate.positionTitle);
+  console.log('Status:', data.certificate.verificationStatus); // "verified" | "revoked" | "expired"
+} else {
+  console.warn('Certificate not found');
+}`}</code></pre>
+                  )}
+                  {activeCodeSnippet.certMeta === 'response' && (
+                    <pre className="text-emerald-400"><code>{`{
+  "found": true,
+  "certificate": {
+    "certificateId": "GRC-2026-00125",
+    "personName": "Rahul Sharma",
+    "departmentName": "Software Development",
+    "positionTitle": "Frontend Developer Intern",
+    "engagementType": "internship",
+    "startDate": "2026-01-01",
+    "endDate": "2026-06-30",
+    "verificationStatus": "verified",
+    "certificateTitle": "Internship Completion Certificate",
+    "description": "Successfully completed frontend development internship.",
+    "skills": ["React", "Next.js", "TypeScript"],
+    "issuedDate": "2026-07-05",
+    "issuerName": "Go_Repireo",
+    "employeeOrInternId": "GRI-0125"
+  }
+}`}</code></pre>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Endpoint 5: Certificate QR Code Stream */}
+          <div className="rounded-xl border border-zinc-200 bg-white shadow-xs overflow-hidden">
+            <div className="p-5 border-b border-zinc-100 flex flex-wrap items-center justify-between gap-3 bg-zinc-50/50">
+              <div className="flex items-center gap-2.5">
+                <span className="px-2 py-0.5 rounded font-mono text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  GET
+                </span>
+                <span className="font-mono text-[13px] font-semibold text-zinc-900">
+                  /api/public/certificates/:identifier/qr
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-zinc-500">
+                Response: image/png (Binary Stream)
+              </span>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <p className="text-[13px] text-zinc-600 leading-relaxed">
+                Directly streams raw PNG QR code image pointing to the public verification web portal. Safe for embedding in third-party websites or PDFs without credentials.
+              </p>
+
+              <div className="rounded-lg border border-zinc-800 bg-[#0c0d0e] overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800 text-xs">
+                  <span className="text-[11px] font-mono text-zinc-400 font-medium">HTML Example</span>
+                  <button
+                    onClick={() => copyToClipboard(`<img src="${baseUrl}/api/public/certificates/GRC-2026-00125/qr" width="160" height="160" alt="Certificate Verification QR" />`, 'cert-qr-html')}
+                    className="p-1 rounded text-zinc-400 hover:text-zinc-200 transition"
+                  >
+                    {copiedKey === 'cert-qr-html' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <div className="p-3 text-[12px] font-mono text-zinc-300 overflow-x-auto">
+                  <pre><code>{`<img 
+  src="${baseUrl}/api/public/certificates/GRC-2026-00125/qr" 
+  width="160" 
+  height="160" 
+  alt="Certificate Verification QR" 
+/>`}</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -493,13 +703,27 @@ if (result.found) {
                 Send live test requests against local and production verification endpoints.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={consoleEndpoint}
+                onChange={(e) => {
+                  const ep = e.target.value as 'cards' | 'certificates';
+                  setConsoleEndpoint(ep);
+                  setTestId(ep === 'certificates' ? 'GRC-2026-00125' : 'GRI-6Q5PVVA');
+                  setTestResult(null);
+                  setTestStatus(null);
+                }}
+                className="px-2.5 py-1.5 text-xs font-medium border border-zinc-300 rounded-lg bg-zinc-50 text-zinc-800 focus:outline-none focus:border-zinc-500"
+              >
+                <option value="certificates">Certificates (/api/public/certificates)</option>
+                <option value="cards">ID Cards (/api/public/cards)</option>
+              </select>
               <input
                 type="text"
                 value={testId}
                 onChange={(e) => setTestId(e.target.value)}
-                placeholder="GRI-6Q5PVVA"
-                className="px-3 py-1.5 text-xs font-mono border border-zinc-300 rounded-lg text-zinc-900 w-48 focus:outline-none focus:border-zinc-500"
+                placeholder={consoleEndpoint === 'certificates' ? 'GRC-2026-00125' : 'GRI-6Q5PVVA'}
+                className="px-3 py-1.5 text-xs font-mono border border-zinc-300 rounded-lg text-zinc-900 w-44 focus:outline-none focus:border-zinc-500"
               />
               <button
                 onClick={runLiveTest}
@@ -523,14 +747,16 @@ if (result.found) {
                 >
                   Response JSON
                 </button>
-                <button
-                  onClick={() => setConsoleView('preview')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition ${
-                    consoleView === 'preview' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                  }`}
-                >
-                  Live Widget Preview
-                </button>
+                {consoleEndpoint === 'cards' && (
+                  <button
+                    onClick={() => setConsoleView('preview')}
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition ${
+                      consoleView === 'preview' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                    }`}
+                  >
+                    Live Widget Preview
+                  </button>
+                )}
               </div>
 
               {testStatus && (
