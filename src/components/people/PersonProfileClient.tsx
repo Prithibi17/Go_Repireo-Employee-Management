@@ -688,7 +688,7 @@ export function PersonProfileClient({
                   <CertificateDocument
                     certificate={cert}
                     company={company}
-                    appUrl="https://go-repireo-employee-management.vercel.app"
+                    appUrl={company?.website || 'https://gorepireo.in'}
                   />
                 </div>
               ))}

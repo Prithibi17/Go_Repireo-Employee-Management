@@ -19,11 +19,15 @@ interface CertificateDocumentProps {
 export function CertificateDocument({
   certificate,
   company,
-  appUrl = 'https://go-repireo-employee-management.vercel.app',
+  appUrl,
   showActions = true,
 }: CertificateDocumentProps) {
   const certRef = useRef<HTMLDivElement>(null);
-  const verifyUrl = `${appUrl}/verify/certificate/${certificate.public_verification_code}`;
+  const verifyDomain = (company?.website && company.website.startsWith('http'))
+    ? company.website.replace(/\/+$/, '')
+    : (appUrl || 'https://gorepireo.in');
+  const verifyId = certificate.certificate_number || certificate.public_verification_code;
+  const verifyUrl = `${verifyDomain}/verify/certificate/${encodeURIComponent(verifyId)}`;
 
   const handleDownloadPdf = () => {
     window.open(`/api/certificates/${certificate.id}/download`, '_blank');
@@ -43,26 +47,27 @@ export function CertificateDocument({
         <div className="flex flex-wrap items-center justify-center gap-3 mb-6 print:hidden">
           <button
             onClick={handleDownloadPdf}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs transition"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs transition cursor-pointer"
           >
             <Download className="w-4 h-4" />
             Download Certificate PDF
           </button>
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-slate-800 hover:bg-slate-900 text-white rounded-lg shadow-xs transition"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-slate-800 hover:bg-slate-900 text-white rounded-lg shadow-xs transition cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             Print Certificate
           </button>
-          <Link
-            to={`/verify/certificate/${certificate.public_verification_code}`}
+          <a
+            href={verifyUrl}
             target="_blank"
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg shadow-xs transition"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg shadow-xs transition cursor-pointer"
           >
             <ExternalLink className="w-4 h-4 text-blue-600" />
-            Test Public Verification Page
-          </Link>
+            Verify on gorepireo.in
+          </a>
         </div>
       )}
 

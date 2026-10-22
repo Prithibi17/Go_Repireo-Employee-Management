@@ -7,7 +7,7 @@ import { formatDate } from '../lib/utils';
 
 export async function generateOfficialCertificatePdf(
   certificate: Certificate,
-  appUrl: string = 'https://go-repireo-employee-management.vercel.app'
+  appUrl: string = 'https://gorepireo.in'
 ): Promise<Uint8Array> {
   const templatePath = path.join(process.cwd(), 'public', 'official-certificate-template.pdf');
   const templateBytes = fs.readFileSync(templatePath);
@@ -185,7 +185,8 @@ export async function generateOfficialCertificatePdf(
 
   // Generate QR Code image PNG buffer with margin 0
   const verifyId = certificate.certificate_number || certificate.public_verification_code;
-  const verifyUrl = `${appUrl}/verify/certificate/${encodeURIComponent(verifyId)}`;
+  const baseUrl = (appUrl && appUrl.startsWith('http')) ? appUrl.replace(/\/+$/, '') : 'https://gorepireo.in';
+  const verifyUrl = `${baseUrl}/verify/certificate/${encodeURIComponent(verifyId)}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
     width: 300,
     margin: 0,

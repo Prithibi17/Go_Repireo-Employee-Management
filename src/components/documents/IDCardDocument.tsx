@@ -20,11 +20,15 @@ export function IDCardDocument({
   card,
   person,
   company,
-  appUrl = 'https://go-repireo-employee-management.vercel.app',
+  appUrl,
   showActions = true,
 }: IDCardDocumentProps) {
   const cardContainerRef = useRef<HTMLDivElement>(null);
-  const verifyUrl = `${appUrl}/verify/id/${card.public_verification_code}`;
+  const verifyDomain = (company?.website && company.website.startsWith('http'))
+    ? company.website.replace(/\/+$/, '')
+    : (appUrl || 'https://gorepireo.in');
+  const verifyId = person?.person_code || card.card_number || card.public_verification_code;
+  const verifyUrl = `${verifyDomain}/verify/id/${encodeURIComponent(verifyId)}`;
 
   const handleDownloadImage = async () => {
     if (!cardContainerRef.current) return;

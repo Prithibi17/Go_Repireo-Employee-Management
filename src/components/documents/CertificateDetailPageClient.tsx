@@ -71,7 +71,11 @@ export function CertificateDetailPageClient({
     }
   };
 
-  const publicVerifyUrl = `/verify/certificate/${certificate.public_verification_code}`;
+  const verifyDomain = (company?.website && company.website.startsWith('http'))
+    ? company.website.replace(/\/+$/, '')
+    : 'https://gorepireo.in';
+  const verifyId = certificate.certificate_number || certificate.public_verification_code;
+  const publicVerifyUrl = `${verifyDomain}/verify/certificate/${encodeURIComponent(verifyId)}`;
 
   return (
     <div className="space-y-6">
@@ -98,14 +102,15 @@ export function CertificateDetailPageClient({
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            to={publicVerifyUrl}
+          <a
+            href={publicVerifyUrl}
             target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg shadow-xs transition"
           >
             <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
-            Public Verification Page
-          </Link>
+            Verify on gorepireo.in
+          </a>
 
           {canRevoke && certificate.status === 'ISSUED' && (
             <button
@@ -146,7 +151,7 @@ export function CertificateDetailPageClient({
         <CertificateDocument
           certificate={certificate}
           company={company}
-          appUrl={process.env.NEXT_PUBLIC_APP_URL || 'https://go-repireo-employee-management.vercel.app'}
+          appUrl={verifyDomain}
         />
       </div>
 

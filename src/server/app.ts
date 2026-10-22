@@ -554,7 +554,7 @@ app.get('/api/certificates/:id/download', async (c) => {
     const company = await DataService.getCompanySettings();
     const appUrl = (company?.website && company.website.startsWith('http'))
       ? company.website.replace(/\/+$/, '')
-      : (process.env.VITE_APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://go-repireo-employee-management.vercel.app');
+      : 'https://gorepireo.in';
 
     const pdfBytes = await generateOfficialCertificatePdf(certificate, appUrl);
     const filename = `GoRepireo_Certificate_${certificate.person_code_snapshot || certificate.certificate_number}.pdf`;
