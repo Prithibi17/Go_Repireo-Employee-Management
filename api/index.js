@@ -48711,27 +48711,51 @@ var DataService = {
   async verifyIdByToken(rawToken) {
     await ensureDb();
     const db = getTursoClient();
-    const tokenHash = hashToken(rawToken);
+    const cleanToken = rawToken.trim();
+    const tokenHash = hashToken(cleanToken);
+    let cardRow = null;
     const tokRes = await db.execute({
       sql: "SELECT * FROM verification_tokens WHERE token_hash = ? AND resource_type = 'ID_CARD' LIMIT 1",
       args: [tokenHash]
     });
-    if (tokRes.rows.length === 0) {
-      return { success: false, status: "NOT_FOUND", message: "We could not find an official Go_Repireo record associated with this QR code." };
+    if (tokRes.rows.length > 0) {
+      const token = tokRes.rows[0];
+      const cardRes = await db.execute({
+        sql: `SELECT c.*, p.person_code, p.full_name, p.profile_photo_path, p.designation, p.person_type, d.name as dept_name
+              FROM id_cards c
+              LEFT JOIN people p ON c.person_id = p.id
+              LEFT JOIN departments d ON p.department_id = d.id
+              WHERE c.id = ?`,
+        args: [String(token.resource_id)]
+      });
+      if (cardRes.rows.length > 0) {
+        cardRow = cardRes.rows[0];
+      }
     }
-    const token = tokRes.rows[0];
-    const cardRes = await db.execute({
-      sql: `SELECT c.*, p.person_code, p.full_name, p.profile_photo_path, p.designation, p.person_type, d.name as dept_name
-            FROM id_cards c
-            LEFT JOIN people p ON c.person_id = p.id
-            LEFT JOIN departments d ON p.department_id = d.id
-            WHERE c.id = ?`,
-      args: [String(token.resource_id)]
-    });
-    if (cardRes.rows.length === 0) {
-      return { success: false, status: "NOT_FOUND", message: "ID record not found." };
+    if (!cardRow) {
+      const directCardRes = await db.execute({
+        sql: `SELECT c.*, p.person_code, p.full_name, p.profile_photo_path, p.designation, p.person_type, d.name as dept_name
+              FROM id_cards c
+              LEFT JOIN people p ON c.person_id = p.id
+              LEFT JOIN departments d ON p.department_id = d.id
+              WHERE UPPER(c.card_number) = UPPER(?)
+                 OR UPPER(p.person_code) = UPPER(?)
+                 OR c.public_verification_code = ?
+                 OR c.id = ?
+                 OR (p.person_code LIKE 'GRE-%' AND UPPER(REPLACE(p.person_code, 'GRE-', 'GRI-')) = UPPER(?))
+                 OR (p.person_code LIKE 'GRI-%' AND UPPER(REPLACE(p.person_code, 'GRI-', 'GRE-')) = UPPER(?))
+              ORDER BY (CASE WHEN c.status = 'ACTIVE' THEN 0 ELSE 1 END), c.issued_at DESC
+              LIMIT 1`,
+        args: [cleanToken, cleanToken, cleanToken, cleanToken, cleanToken, cleanToken]
+      });
+      if (directCardRes.rows.length > 0) {
+        cardRow = directCardRes.rows[0];
+      }
     }
-    const card = cardRes.rows[0];
+    if (!cardRow) {
+      return { success: false, status: "NOT_FOUND", message: `We could not find an official Go_Repireo ID record associated with "${cleanToken}".` };
+    }
+    const card = cardRow;
     const company = await this.getCompanySettings();
     return {
       success: true,
@@ -49105,23 +49129,59 @@ var DataService = {
   async verifyCertificateByToken(rawToken) {
     await ensureDb();
     const db = getTursoClient();
-    const tokenHash = hashToken(rawToken);
+    const cleanToken = rawToken.trim();
+    const tokenHash = hashToken(cleanToken);
+    let certRow = null;
     const tokRes = await db.execute({
       sql: "SELECT * FROM verification_tokens WHERE token_hash = ? AND resource_type = 'CERTIFICATE' LIMIT 1",
       args: [tokenHash]
     });
-    if (tokRes.rows.length === 0) {
-      return { success: false, status: "NOT_FOUND", message: "We could not find an official Go_Repireo certificate associated with this QR code." };
+    if (tokRes.rows.length > 0) {
+      const token = tokRes.rows[0];
+      const certRes = await db.execute({
+        sql: "SELECT * FROM certificates WHERE id = ?",
+        args: [String(token.resource_id)]
+      });
+      if (certRes.rows.length > 0) {
+        certRow = certRes.rows[0];
+      }
     }
-    const token = tokRes.rows[0];
-    const certRes = await db.execute({
-      sql: "SELECT * FROM certificates WHERE id = ?",
-      args: [String(token.resource_id)]
-    });
-    if (certRes.rows.length === 0) {
-      return { success: false, status: "NOT_FOUND", message: "Certificate record not found." };
+    if (!certRow) {
+      const directRes = await db.execute({
+        sql: `SELECT * FROM certificates 
+              WHERE UPPER(certificate_number) = UPPER(?)
+                 OR UPPER(person_code_snapshot) = UPPER(?)
+                 OR public_verification_code = ?
+                 OR id = ?
+                 OR (person_code_snapshot LIKE 'GRE-%' AND UPPER(REPLACE(person_code_snapshot, 'GRE-', 'GRI-')) = UPPER(?))
+                 OR (person_code_snapshot LIKE 'GRI-%' AND UPPER(REPLACE(person_code_snapshot, 'GRI-', 'GRE-')) = UPPER(?))
+              ORDER BY (CASE WHEN status = 'ISSUED' THEN 0 ELSE 1 END), created_at DESC
+              LIMIT 1`,
+        args: [cleanToken, cleanToken, cleanToken, cleanToken, cleanToken, cleanToken]
+      });
+      if (directRes.rows.length > 0) {
+        certRow = directRes.rows[0];
+      }
     }
-    const cert = certRes.rows[0];
+    if (!certRow) {
+      const personCertRes = await db.execute({
+        sql: `SELECT c.* FROM certificates c
+              JOIN people p ON c.person_id = p.id
+              WHERE UPPER(p.person_code) = UPPER(?)
+                 OR (p.person_code LIKE 'GRE-%' AND UPPER(REPLACE(p.person_code, 'GRE-', 'GRI-')) = UPPER(?))
+                 OR (p.person_code LIKE 'GRI-%' AND UPPER(REPLACE(p.person_code, 'GRI-', 'GRE-')) = UPPER(?))
+              ORDER BY (CASE WHEN c.status = 'ISSUED' THEN 0 ELSE 1 END), c.created_at DESC
+              LIMIT 1`,
+        args: [cleanToken, cleanToken, cleanToken]
+      });
+      if (personCertRes.rows.length > 0) {
+        certRow = personCertRes.rows[0];
+      }
+    }
+    if (!certRow) {
+      return { success: false, status: "NOT_FOUND", message: `We could not find an official Go_Repireo certificate associated with "${cleanToken}".` };
+    }
+    const cert = certRow;
     const company = await this.getCompanySettings();
     return {
       success: true,
