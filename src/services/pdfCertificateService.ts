@@ -184,7 +184,8 @@ export async function generateOfficialCertificatePdf(
   });
 
   // Generate QR Code image PNG buffer with margin 0
-  const verifyUrl = `${appUrl}/verify/certificate/${certificate.public_verification_code}`;
+  const verifyId = certificate.certificate_number || certificate.public_verification_code;
+  const verifyUrl = `${appUrl}/verify/certificate/${encodeURIComponent(verifyId)}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
     width: 300,
     margin: 0,

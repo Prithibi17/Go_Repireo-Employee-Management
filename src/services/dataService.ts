@@ -284,29 +284,28 @@ export const DataService = {
     await ensureDb();
     const db = getTursoClient();
     const year = new Date(issueDate).getFullYear() || 2026;
-    const prefix = `GR/INT/${year}`;
+    const prefix = `GRC-${year}`;
 
     // Fetch all existing certificate numbers to guarantee zero collisions
     const existingRes = await db.execute({
-      sql: 'SELECT certificate_number FROM certificates WHERE certificate_number LIKE ?',
-      args: [`${prefix}/%`],
+      sql: 'SELECT certificate_number FROM certificates WHERE certificate_number LIKE ? OR certificate_number LIKE ?',
+      args: [`${prefix}-%`, `GR/INT/${year}/%`],
     });
     const existingNumbers = new Set(existingRes.rows.map(r => String(r.certificate_number)));
 
-    // Generate random 4-digit code (1000 - 9999), retrying until unique
+    // Generate 5-digit sequence (e.g. GRC-2026-00125)
     let candidate = '';
     let attempts = 0;
     while (attempts < 10000) {
-      const randNum = Math.floor(1000 + Math.random() * 9000); // 1000 to 9999
-      candidate = `${prefix}/${randNum}`;
+      const randNum = String(Math.floor(100 + Math.random() * 99000)).padStart(5, '0');
+      candidate = `${prefix}-${randNum}`;
       if (!existingNumbers.has(candidate)) {
         return candidate;
       }
       attempts++;
     }
 
-    // Fallback if 4-digit range becomes exhausted: use 5-digit random
-    return `${prefix}/${Math.floor(10000 + Math.random() * 90000)}`;
+    return `${prefix}-${Math.floor(10000 + Math.random() * 90000)}`;
   },
 
   async getNextSequence(name: 'employee' | 'intern' | 'certificate'): Promise<number> {
@@ -2337,7 +2336,9 @@ export const DataService = {
   async getPublicCertificateByIdentifier(identifier: string, origin?: string): Promise<PublicCertificateApiResponse> {
     await ensureDb();
     const db = getTursoClient();
-    const cleanId = identifier.trim();
+    const cleanId = decodeURIComponent(identifier).trim();
+    const slashVersion = cleanId.replace(/-/g, '/');
+    const hyphenVersion = cleanId.replace(/\//g, '-');
     const company = await this.getCompanySettings();
     const appBaseUrl = origin || 'https://go-repireo-employee-management.vercel.app';
 
@@ -2349,6 +2350,8 @@ export const DataService = {
             FROM certificates c
             LEFT JOIN people p ON c.person_id = p.id
             WHERE UPPER(c.certificate_number) = UPPER(?)
+               OR UPPER(c.certificate_number) = UPPER(?)
+               OR UPPER(c.certificate_number) = UPPER(?)
                OR c.public_verification_code = ?
                OR c.id = ?
                OR UPPER(c.person_code_snapshot) = UPPER(?)
@@ -2356,7 +2359,7 @@ export const DataService = {
                OR (c.person_code_snapshot LIKE 'GRI-%' AND UPPER(REPLACE(c.person_code_snapshot, 'GRI-', 'GRE-')) = UPPER(?))
             ORDER BY (CASE WHEN c.status = 'ISSUED' THEN 0 ELSE 1 END), c.created_at DESC
             LIMIT 1`,
-      args: [cleanId, cleanId, cleanId, cleanId, cleanId, cleanId],
+      args: [cleanId, slashVersion, hyphenVersion, cleanId, cleanId, cleanId, cleanId, cleanId],
     });
 
     if (certRes.rows.length > 0) {
@@ -2380,6 +2383,24 @@ export const DataService = {
         if (fallbackRes.rows.length > 0) {
           certRow = fallbackRes.rows[0];
         }
+      }
+    }
+
+    // 3. Fallback: lookup by person in people table
+    if (!certRow) {
+      const personCertRes = await db.execute({
+        sql: `SELECT c.*, p.company_email, p.personal_email, p.status as person_status
+              FROM certificates c
+              JOIN people p ON c.person_id = p.id
+              WHERE UPPER(p.person_code) = UPPER(?)
+                 OR (p.person_code LIKE 'GRE-%' AND UPPER(REPLACE(p.person_code, 'GRE-', 'GRI-')) = UPPER(?))
+                 OR (p.person_code LIKE 'GRI-%' AND UPPER(REPLACE(p.person_code, 'GRI-', 'GRE-')) = UPPER(?))
+              ORDER BY (CASE WHEN c.status = 'ISSUED' THEN 0 ELSE 1 END), c.created_at DESC
+              LIMIT 1`,
+        args: [cleanId, cleanId, cleanId],
+      });
+      if (personCertRes.rows.length > 0) {
+        certRow = personCertRes.rows[0];
       }
     }
 
@@ -2411,8 +2432,10 @@ export const DataService = {
     }
 
     const certId = String(certRow.certificate_number || certRow.id);
-    const verifyCode = String(certRow.public_verification_code || '');
-    const verifyUrl = `${appBaseUrl}/verify/certificate/${verifyCode || certId}`;
+    const verifyDomain = (company.website && company.website.startsWith('http')) 
+      ? company.website.replace(/\/+$/, '') 
+      : appBaseUrl;
+    const verifyUrl = `${verifyDomain}/verify/certificate/${encodeURIComponent(certId)}`;
     const pdfUrl = `${appBaseUrl}/api/certificates/${certRow.id}/download`;
 
     // Skills extraction

@@ -47195,23 +47195,23 @@ var DataService = {
     await ensureDb();
     const db = getTursoClient();
     const year = new Date(issueDate).getFullYear() || 2026;
-    const prefix = `GR/INT/${year}`;
+    const prefix = `GRC-${year}`;
     const existingRes = await db.execute({
-      sql: "SELECT certificate_number FROM certificates WHERE certificate_number LIKE ?",
-      args: [`${prefix}/%`]
+      sql: "SELECT certificate_number FROM certificates WHERE certificate_number LIKE ? OR certificate_number LIKE ?",
+      args: [`${prefix}-%`, `GR/INT/${year}/%`]
     });
     const existingNumbers = new Set(existingRes.rows.map((r) => String(r.certificate_number)));
     let candidate = "";
     let attempts = 0;
     while (attempts < 1e4) {
-      const randNum = Math.floor(1e3 + Math.random() * 9e3);
-      candidate = `${prefix}/${randNum}`;
+      const randNum = String(Math.floor(100 + Math.random() * 99e3)).padStart(5, "0");
+      candidate = `${prefix}-${randNum}`;
       if (!existingNumbers.has(candidate)) {
         return candidate;
       }
       attempts++;
     }
-    return `${prefix}/${Math.floor(1e4 + Math.random() * 9e4)}`;
+    return `${prefix}-${Math.floor(1e4 + Math.random() * 9e4)}`;
   },
   async getNextSequence(name) {
     await ensureDb();
@@ -48954,7 +48954,9 @@ var DataService = {
   async getPublicCertificateByIdentifier(identifier, origin) {
     await ensureDb();
     const db = getTursoClient();
-    const cleanId = identifier.trim();
+    const cleanId = decodeURIComponent(identifier).trim();
+    const slashVersion = cleanId.replace(/-/g, "/");
+    const hyphenVersion = cleanId.replace(/\//g, "-");
     const company = await this.getCompanySettings();
     const appBaseUrl = origin || "https://go-repireo-employee-management.vercel.app";
     let certRow = null;
@@ -48963,6 +48965,8 @@ var DataService = {
             FROM certificates c
             LEFT JOIN people p ON c.person_id = p.id
             WHERE UPPER(c.certificate_number) = UPPER(?)
+               OR UPPER(c.certificate_number) = UPPER(?)
+               OR UPPER(c.certificate_number) = UPPER(?)
                OR c.public_verification_code = ?
                OR c.id = ?
                OR UPPER(c.person_code_snapshot) = UPPER(?)
@@ -48970,7 +48974,7 @@ var DataService = {
                OR (c.person_code_snapshot LIKE 'GRI-%' AND UPPER(REPLACE(c.person_code_snapshot, 'GRI-', 'GRE-')) = UPPER(?))
             ORDER BY (CASE WHEN c.status = 'ISSUED' THEN 0 ELSE 1 END), c.created_at DESC
             LIMIT 1`,
-      args: [cleanId, cleanId, cleanId, cleanId, cleanId, cleanId]
+      args: [cleanId, slashVersion, hyphenVersion, cleanId, cleanId, cleanId, cleanId, cleanId]
     });
     if (certRes.rows.length > 0) {
       certRow = certRes.rows[0];
@@ -48992,6 +48996,22 @@ var DataService = {
         if (fallbackRes.rows.length > 0) {
           certRow = fallbackRes.rows[0];
         }
+      }
+    }
+    if (!certRow) {
+      const personCertRes = await db.execute({
+        sql: `SELECT c.*, p.company_email, p.personal_email, p.status as person_status
+              FROM certificates c
+              JOIN people p ON c.person_id = p.id
+              WHERE UPPER(p.person_code) = UPPER(?)
+                 OR (p.person_code LIKE 'GRE-%' AND UPPER(REPLACE(p.person_code, 'GRE-', 'GRI-')) = UPPER(?))
+                 OR (p.person_code LIKE 'GRI-%' AND UPPER(REPLACE(p.person_code, 'GRI-', 'GRE-')) = UPPER(?))
+              ORDER BY (CASE WHEN c.status = 'ISSUED' THEN 0 ELSE 1 END), c.created_at DESC
+              LIMIT 1`,
+        args: [cleanId, cleanId, cleanId]
+      });
+      if (personCertRes.rows.length > 0) {
+        certRow = personCertRes.rows[0];
       }
     }
     if (!certRow) {
@@ -49017,8 +49037,8 @@ var DataService = {
       verificationStatus = "verified";
     }
     const certId = String(certRow.certificate_number || certRow.id);
-    const verifyCode = String(certRow.public_verification_code || "");
-    const verifyUrl = `${appBaseUrl}/verify/certificate/${verifyCode || certId}`;
+    const verifyDomain = company.website && company.website.startsWith("http") ? company.website.replace(/\/+$/, "") : appBaseUrl;
+    const verifyUrl = `${verifyDomain}/verify/certificate/${encodeURIComponent(certId)}`;
     const pdfUrl = `${appBaseUrl}/api/certificates/${certRow.id}/download`;
     const skillsList = [];
     if (certRow.domain_snapshot) {
@@ -69407,7 +69427,8 @@ async function generateOfficialCertificatePdf(certificate, appUrl = "https://go-
     borderColor: (0, import_pdf_lib.rgb)(0.12, 0.16, 0.22),
     borderWidth: 1.5
   });
-  const verifyUrl = `${appUrl}/verify/certificate/${certificate.public_verification_code}`;
+  const verifyId = certificate.certificate_number || certificate.public_verification_code;
+  const verifyUrl = `${appUrl}/verify/certificate/${encodeURIComponent(verifyId)}`;
   const qrDataUrl = await import_qrcode2.default.toDataURL(verifyUrl, {
     width: 300,
     margin: 0,
@@ -70117,20 +70138,20 @@ app.get("/api/certificates", async (c) => {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
-app.options("/api/certificates/:id", (c) => {
+app.options("/api/certificates/:id{.+}", (c) => {
   c.header("Access-Control-Allow-Origin", "*");
   c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
   c.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
   return c.text("", 204);
 });
-app.get("/api/certificates/:id", async (c) => {
+app.get("/api/certificates/:id{.+}", async (c) => {
   c.header("Access-Control-Allow-Origin", "*");
   c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
   try {
     const id = c.req.param("id");
     const url2 = new URL(c.req.url);
     const origin = `${url2.protocol}//${url2.host}`;
-    if (id.startsWith("cert-")) {
+    if (id.startsWith("cert-") && !id.includes("/")) {
       const certificate = await DataService.getCertificateById(id);
       if (certificate) {
         const company = await DataService.getCompanySettings();
@@ -70211,7 +70232,8 @@ app.get("/api/certificates/:id/download", async (c) => {
     if (!certificate) {
       return c.text("Certificate not found", 404);
     }
-    const appUrl = process.env.VITE_APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://go-repireo-employee-management.vercel.app";
+    const company = await DataService.getCompanySettings();
+    const appUrl = company?.website && company.website.startsWith("http") ? company.website.replace(/\/+$/, "") : process.env.VITE_APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://go-repireo-employee-management.vercel.app";
     const pdfBytes = await generateOfficialCertificatePdf(certificate, appUrl);
     const filename = `GoRepireo_Certificate_${certificate.person_code_snapshot || certificate.certificate_number}.pdf`;
     return new Response(Buffer.from(pdfBytes), {
@@ -70672,21 +70694,58 @@ app.get("/api/public/cards/:identifier/qr", async (c) => {
     return c.text(`Failed to generate QR: ${err.message}`, 500);
   }
 });
-app.options("/api/public/certificates/:identifier", (c) => {
+app.options("/api/public/certificates", (c) => {
   c.header("Access-Control-Allow-Origin", "*");
   c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
   c.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
   return c.text("", 204);
 });
-app.get("/api/public/certificates/:identifier", async (c) => {
+app.get("/api/public/certificates", async (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  c.header("Cache-Control", "public, max-age=60, s-maxage=300");
+  const identifier = c.req.query("identifier") || c.req.query("id") || c.req.query("code");
+  if (!identifier) {
+    return c.json({ found: false, error: "Identifier query parameter required" }, 400);
+  }
+  const url2 = new URL(c.req.url);
+  const origin = `${url2.protocol}//${url2.host}`;
+  const result = await DataService.getPublicCertificateByIdentifier(identifier, origin);
+  if (!result.found) {
+    return c.json({ found: false }, 404);
+  }
+  return c.json(result, 200);
+});
+app.options("/api/public/certificates/:identifier{.+}", (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  c.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
+  return c.text("", 204);
+});
+app.get("/api/public/certificates/:identifier{.+}", async (c) => {
   c.header("Access-Control-Allow-Origin", "*");
   c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
   c.header("Cache-Control", "public, max-age=60, s-maxage=300");
   try {
-    const identifier = c.req.param("identifier");
+    const rawParam = c.req.param("identifier");
     const url2 = new URL(c.req.url);
     const origin = `${url2.protocol}//${url2.host}`;
-    const result = await DataService.getPublicCertificateByIdentifier(identifier, origin);
+    if (rawParam.endsWith("/qr")) {
+      const actualId = rawParam.slice(0, -3);
+      const buffer = await DataService.getPublicCertificateQrBuffer(actualId, origin);
+      if (!buffer) {
+        return c.text("QR code not found for certificate identifier", 404);
+      }
+      return new Response(buffer, {
+        status: 200,
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": "public, max-age=3600, s-maxage=86400",
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    }
+    const result = await DataService.getPublicCertificateByIdentifier(rawParam, origin);
     if (!result.found) {
       return c.json({ found: false }, 404);
     }
@@ -70695,34 +70754,7 @@ app.get("/api/public/certificates/:identifier", async (c) => {
     return c.json({ found: false, error: err.message }, 500);
   }
 });
-app.options("/api/public/certificates/:identifier/qr", (c) => {
-  c.header("Access-Control-Allow-Origin", "*");
-  c.header("Access-Control-Allow-Methods", "GET, OPTIONS");
-  return c.text("", 204);
-});
-app.get("/api/public/certificates/:identifier/qr", async (c) => {
-  c.header("Access-Control-Allow-Origin", "*");
-  try {
-    const identifier = c.req.param("identifier");
-    const url2 = new URL(c.req.url);
-    const origin = `${url2.protocol}//${url2.host}`;
-    const buffer = await DataService.getPublicCertificateQrBuffer(identifier, origin);
-    if (!buffer) {
-      return c.text("QR code not found for certificate identifier", 404);
-    }
-    return new Response(buffer, {
-      status: 200,
-      headers: {
-        "Content-Type": "image/png",
-        "Cache-Control": "public, max-age=3600, s-maxage=86400",
-        "Access-Control-Allow-Origin": "*"
-      }
-    });
-  } catch (err) {
-    return c.text(`Failed to generate QR: ${err.message}`, 500);
-  }
-});
-app.get("/api/verify/id/:code", async (c) => {
+app.get("/api/verify/id/:code{.+}", async (c) => {
   c.header("Access-Control-Allow-Origin", "*");
   try {
     const code = c.req.param("code");
@@ -70732,7 +70764,7 @@ app.get("/api/verify/id/:code", async (c) => {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
-app.get("/api/verify/certificate/:code", async (c) => {
+app.get("/api/verify/certificate/:code{.+}", async (c) => {
   c.header("Access-Control-Allow-Origin", "*");
   try {
     const code = c.req.param("code");
