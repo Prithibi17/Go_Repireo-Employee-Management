@@ -246,7 +246,6 @@ export function PersonProfileClient({
   };
 
   const handleIssueCertificate = async () => {
-    if (!activeInternship) return;
     setLoading(true);
     try {
       const res = await fetch('/api/certificates/issue', {
@@ -254,8 +253,25 @@ export function PersonProfileClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           person_id: person.id,
-          internship_id: activeInternship.id,
-          ...certFormData,
+          personId: person.id,
+          internship_id: activeInternship?.id || '',
+          internshipId: activeInternship?.id || '',
+          recipient_name: certFormData.recipient_name,
+          recipientName: certFormData.recipient_name,
+          role: certFormData.role,
+          department: certFormData.department,
+          domain: certFormData.domain,
+          project: certFormData.project,
+          start_date: certFormData.start_date,
+          startDate: certFormData.start_date,
+          end_date: certFormData.end_date,
+          endDate: certFormData.end_date,
+          issue_date: certFormData.issue_date,
+          issueDate: certFormData.issue_date,
+          signatory_name: certFormData.signatory_name,
+          signatoryName: certFormData.signatory_name,
+          signatory_designation: certFormData.signatory_designation,
+          signatoryDesignation: certFormData.signatory_designation,
         }),
       });
       const data = await res.json();

@@ -48064,9 +48064,35 @@ var DataService = {
   async issueCertificate(params) {
     await ensureDb();
     const db = getTursoClient();
-    const person = await this.getPersonById(params.personId);
+    const personId = String(params.personId || params.person_id || "").trim();
+    if (!personId) throw new Error("Person ID is required");
+    const person = await this.getPersonById(personId);
     if (!person) throw new Error("Person not found");
-    const certificateNumber = await this.generateUniqueCertificateNumber(params.issueDate);
+    let internshipId = String(params.internshipId || params.internship_id || "").trim();
+    if (!internshipId) {
+      const intRes = await db.execute({
+        sql: "SELECT id FROM internships WHERE person_id = ? ORDER BY created_at DESC LIMIT 1",
+        args: [personId]
+      });
+      if (intRes.rows.length > 0) {
+        internshipId = String(intRes.rows[0].id);
+      } else {
+        internshipId = `int-auto-${personId}`;
+      }
+    }
+    const recipientName = String(params.recipientName || params.recipient_name || person.full_name || "").trim();
+    const role = String(params.role || person.designation || "Intern").trim();
+    const department = String(params.department || person.department?.name || "Technology").trim();
+    const domain2 = params.domain !== void 0 && params.domain !== null && String(params.domain).trim() ? String(params.domain).trim() : null;
+    const project = params.project !== void 0 && params.project !== null && String(params.project).trim() ? String(params.project).trim() : null;
+    const startDate = String(params.startDate || params.start_date || person.joining_date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0]).trim();
+    const endDate = String(params.endDate || params.end_date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0]).trim();
+    const issueDate = String(params.issueDate || params.issue_date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0]).trim();
+    const signatoryName = params.signatoryName || params.signatory_name ? String(params.signatoryName || params.signatory_name).trim() : null;
+    const signatoryDesignation = params.signatoryDesignation || params.signatory_designation ? String(params.signatoryDesignation || params.signatory_designation).trim() : null;
+    const actor = params.actor || { id: null, name: "System" };
+    const actorId = actor.id ? String(actor.id) : null;
+    const certificateNumber = await this.generateUniqueCertificateNumber(issueDate);
     const rawToken = generateVerificationToken("crt_v_");
     const tokenHash = hashToken(rawToken);
     const tokenId = `tok-cert-${Date.now()}`;
@@ -48087,33 +48113,33 @@ var DataService = {
       ) VALUES (?, ?, ?, ?, 'INTERNSHIP_COMPLETION', ?, 'ISSUED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
       args: [
         certId,
-        params.personId,
-        params.internshipId,
+        personId,
+        internshipId,
         certificateNumber,
-        params.issueDate,
+        issueDate,
         tokenId,
         rawToken,
-        params.recipientName,
+        recipientName,
         person.person_code,
-        params.role,
-        params.department,
-        params.domain || null,
-        params.project || null,
-        params.startDate,
-        params.endDate,
-        `${params.startDate} \u2013 ${params.endDate}`,
+        role,
+        department,
+        domain2,
+        project,
+        startDate,
+        endDate,
+        `${startDate} \u2013 ${endDate}`,
         null,
-        params.signatoryName || null,
-        params.signatoryDesignation || null,
-        params.actor.id || null,
+        signatoryName,
+        signatoryDesignation,
+        actorId,
         now,
         now,
         now
       ]
     });
-    await this.logActivity(params.actor, "CERTIFICATE_ISSUED", "CERTIFICATE", certId, {
+    await this.logActivity(actor, "CERTIFICATE_ISSUED", "CERTIFICATE", certId, {
       certificate_number: certificateNumber,
-      recipient: params.recipientName
+      recipient: recipientName
     });
     const cert = await this.getCertificateById(certId);
     return cert;
